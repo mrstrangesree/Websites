@@ -1,0 +1,1813 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>PySpark + Spark SQL Cheatsheet</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#0d1117;color:#c9d1d9;font-size:11px;line-height:1.5}
+@media print{
+  body{background:#fff!important;color:#111!important;font-size:7.5px!important}
+  .page{padding:6mm 8mm!important;max-width:none!important;width:100%!important}
+  .pg-break{page-break-before:always}
+  pre{font-size:7px!important;background:#f6f8fa!important;color:#24292e!important;border:1px solid #ddd!important}
+  .cell-py{background:#eaf2ff!important;border:1px solid #b0c4de!important}
+  .cell-sql{background:#eafff0!important;border:1px solid #9fdfb0!important}
+  .section-hdr{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .cover{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  @page{size:A4 portrait;margin:8mm 6mm}
+}
+/* ── cover ── */
+.cover{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:40px}
+.cover-inner{background:linear-gradient(135deg,#0d1117,#161b22,#0f3460);
+  border:2px solid #1e88e5;border-radius:16px;padding:60px 80px;text-align:center;max-width:700px;width:100%}
+.cover h1{font-size:52px;color:#fff;letter-spacing:6px;margin-bottom:8px}
+.cover h2{font-size:22px;color:#58a6ff;letter-spacing:3px;margin-bottom:16px}
+.cover p{font-size:13px;color:#8b949e;line-height:1.8}
+.badge{display:inline-block;background:#1e88e5;color:#fff;padding:4px 14px;border-radius:20px;margin:4px;font-size:11px;font-weight:700}
+.badges{margin-top:24px}
+/* ── page ── */
+.page{max-width:960px;margin:0 auto;padding:28px 20px}
+.page-title{font-size:20px;font-weight:800;color:#e6edf3;border-bottom:2px solid #30363d;
+  padding-bottom:6px;margin-bottom:14px;letter-spacing:1px}
+/* ── section header ── */
+.section-hdr{display:grid;grid-template-columns:1fr 1fr;padding:6px 12px;
+  font-size:11px;font-weight:700;color:#fff;border-radius:4px 4px 0 0;
+  align-items:center;gap:6px;margin-top:10px}
+.section-hdr span{font-size:15px}
+.blue   {background:#1e88e5}.green  {background:#2e7d32}.red    {background:#c62828}
+.orange {background:#e65100}.purple {background:#6a1b9a}.teal   {background:#00695c}
+.pink   {background:#ad1457}.gray   {background:#455a64}.indigo {background:#283593}
+.brown  {background:#4e342e}
+/* ── dual grid ── */
+.dual{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid #30363d;
+  border-top:none;border-radius:0 0 4px 4px;margin-bottom:2px}
+.cell-py {background:#0d1b2a;padding:8px 10px;border-right:1px solid #30363d}
+.cell-sql{background:#0a1f0a;padding:8px 10px}
+.lang-tag{font-size:9px;font-weight:700;padding:1px 6px;border-radius:10px;
+  display:inline-block;margin-bottom:4px}
+.py-tag {background:#1e88e5;color:#fff}
+.sql-tag{background:#2e7d32;color:#fff}
+/* ── code ── */
+pre{font-family:'Cascadia Code','Fira Code',Consolas,monospace;font-size:9px;
+  line-height:1.55;white-space:pre-wrap;color:#c9d1d9;margin:0}
+.cm {color:#6e7681;font-style:italic}
+.kw {color:#ff7b72}
+.fn {color:#79c0ff}
+.str{color:#a5d6ff}
+.nm {color:#f2cc60}
+.op {color:#56d364}
+.cls{color:#ffa657}
+.k2 {color:#7ee787}
+/* ── note box ── */
+.note{background:#161b22;border-left:3px solid #f2cc60;padding:5px 10px;
+  border-radius:0 4px 4px 0;font-size:9.5px;color:#f2cc60;margin:6px 0}
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <div class="cover-inner">
+    <h1>⚡ PYSPARK</h1>
+    <h2>SPARK SQL CHEATSHEET</h2>
+    <p>Complete side-by-side reference for PySpark &amp; Spark SQL.<br>
+       Every major operation, concept, and performance tuning pattern.</p>
+    <div class="badges">
+      <span class="badge">PySpark 3.5</span>
+      <span class="badge">Spark SQL 3.5</span>
+      <span class="badge">Delta Lake 3.x</span>
+      <span class="badge">Structured Streaming</span>
+      <span class="badge">Performance Tuning</span>
+      <span class="badge">Window Functions</span>
+      <span class="badge">Delta Live Tables</span>
+      <span class="badge">Auto Loader</span>
+    </div>
+  </div>
+</div>
+<div class="page "><div class="page-title">⚡ SETUP &amp; READ DATA</div><div class="section-hdr blue"><span>⚡</span>SparkSession — Setup & Configuration</div><div class="dual">
+  <div class="cell-py"><div class="lang-tag py-tag">PySpark</div><pre>from pyspark.sql import SparkSession
+# Create / get existing session
+spark = (SparkSession.builder
+    .appName("MyApp")              # app name
+    .master("local[*]")            # local = all cores
+    .config("spark.sql.shuffle.partitions","200")
+    .config("spark.executor.memory","4g")
+    .getOrCreate())                # reuse if exists
+
+# Databricks: session already available as `spark`
+sc = spark.sparkContext           # underlying SparkContext</pre></div>
+  <div class="cell-sql"><div class="lang-tag sql-tag">Spark SQL</div><pre>-- Databricks: session always available
+-- View active configs
+SET spark.sql.shuffle.partitions;
+SET spark.executor.memory;
+
+-- Change config at runtime
+SET spark.sql.shuffle.partitions = 100;
+
+-- Show all Spark settings
+SET -v;</pre></div>
+</div><div class="section-hdr green"><span>📂</span>Reading Data</div><div class="dual">
+  <div class="cell-py"><div class="lang-tag py-tag">PySpark</div><pre># ── CSV ──────────────────────────────────────
+df = spark.read.csv("path/*.csv",
+        header=True, inferSchema=True,
+        sep=",", quote='"', escape='"',
+        nullValue="NULL", dateFormat="yyyy-MM-dd")
+
+# ── Parquet ──────────────────────────────────
+df = spark.read.parquet("path/part*.parquet")
+
+# ── JSON ─────────────────────────────────────
+df = spark.read.json("path/*.json")
+df = spark.read.option("multiline","true").json("p")
+
+# ── Delta ─────────────────────────────────────
+df = spark.read.format("delta").load("/delta/tbl")
+df = spark.read.table("catalog.schema.table")
+
+# ── JDBC ──────────────────────────────────────
+df = (spark.read.format("jdbc")
+    .option("url","jdbc:postgresql://host/db")
+    .option("dbtable","schema.table")
+    .option("user","u").option("password","p")
+    .load())
+
+# ── ORC / Avro ────────────────────────────────
+df = spark.read.orc("path/*.orc")
+df = spark.read.format("avro").load("path/")
+
+# ── Explicit schema ───────────────────────────
+from pyspark.sql.types import *
+schema = StructType([
+    StructField("id",   IntegerType(), False),
+    StructField("name", StringType(),  True),
+    StructField("ts",   TimestampType(),True)])
+df = spark.read.schema(schema).csv("path/")</pre></div>
+  <div class="cell-sql"><div class="lang-tag sql-tag">Spark SQL</div><pre>-- Register CSV as temp view then query
+CREATE OR REPLACE TEMPORARY VIEW csv_view
+USING csv
+OPTIONS (path 'path/*.csv', header 'true',
+         inferSchema 'true', sep ',');
+
+-- Parquet
+CREATE OR REPLACE TEMPORARY VIEW pq_view
+USING parquet OPTIONS (path 'path/*.parquet');
+
+-- Delta table (most common in Databricks)
+CREATE TABLE IF NOT EXISTS catalog.schema.tbl
+USING DELTA LOCATION '/delta/tbl';
+
+-- Query any registered temp view
+SELECT * FROM csv_view LIMIT 10;
+
+-- JDBC (external source)
+CREATE OR REPLACE TEMPORARY VIEW jdbc_view
+USING jdbc
+OPTIONS (
+  url 'jdbc:postgresql://host/db',
+  dbtable 'schema.table',
+  user 'u', password 'p');
+
+-- Read with explicit schema (DDL syntax)
+CREATE OR REPLACE TEMPORARY VIEW typed_view
+(id INT NOT NULL, name STRING, ts TIMESTAMP)
+USING csv OPTIONS (path 'path/', header 'true');</pre></div>
+</div><div class="section-hdr teal"><span>🔍</span>Inspect / Explore DataFrame</div><div class="dual">
+  <div class="cell-py"><div class="lang-tag py-tag">PySpark</div><pre>df.printSchema()           # tree of column types
+df.dtypes                  # list of (name, type) tuples
+df.columns                 # list of column names
+df.count()                 # row count (triggers action)
+df.show(5, truncate=False) # print top 5 rows
+df.display()               # Databricks rich display
+df.describe().show()       # stats: count/mean/std/min/max
+df.summary().show()        # adds quartiles
+df.head(3)                 # list of 3 Row objects
+df.first()                 # first Row object
+df.take(5)                 # list of 5 Row objects
+
+# Execution plan (debug performance)
+df.explain()               # physical plan only
+df.explain("formatted")    # human-readable plan
+df.explain("extended")     # logical + physical plans
+
+# Partition info
+df.rdd.getNumPartitions()  # current partition count</pre></div>
+  <div class="cell-sql"><div class="lang-tag sql-tag">Spark SQL</div><pre>-- Schema info
+DESCRIBE TABLE catalog.schema.table;
+DESCRIBE DETAIL catalog.schema.table;  -- Delta only
+DESCRIBE EXTENDED catalog.schema.table;
+
+-- Profile stats
+SELECT COUNT(*) FROM my_table;
+SELECT * FROM my_table LIMIT 5;
+
+-- Summary stats (column-level)
+SELECT
+  COUNT(*)                AS total_rows,
+  COUNT(DISTINCT col)     AS distinct_vals,
+  MIN(col), MAX(col),
+  AVG(col), STDDEV(col)
+FROM my_table;
+
+-- Show partitions (Delta / Hive table)
+SHOW PARTITIONS my_table;
+
+-- Query execution plan
+EXPLAIN SELECT * FROM my_table WHERE id = 1;
+EXPLAIN FORMATTED SELECT * FROM my_table;</pre></div>
+</div></div>
+<div class="page pg-break"><div class="page-title">🎯 SELECT · FILTER · SORT · COLUMNS</div><div class="section-hdr blue"><span>🎯</span>SELECT / Column Selection</div><div class="dual">
+  <div class="cell-py"><div class="lang-tag py-tag">PySpark</div><pre>from pyspark.sql.functions import col, expr, lit
+
+# Select columns
+df.select("id","name","amount")
+df.select(col("id"), col("name").alias("nm"))
+
+# Expressions
+df.select(
+    "id",
+    (col("price") * col("qty")).alias("revenue"),
+    expr("price * qty AS revenue"),      # SQL expr
+    lit(42).alias("const_col"),          # literal
+    col("name").alias("customer"))
+
+# Select all + extra
+df.select("*", lit("US").alias("country"))
+
+# Drop columns
+df.drop("col1","col2")
+
+# Select by type
+from pyspark.sql.types import NumericType
+num_cols = [f.name for f in df.schema.fields
+            if isinstance(f.dataType, NumericType)]
+df.select(num_cols)</pre></div>
+  <div class="cell-sql"><div class="lang-tag sql-tag">Spark SQL</div><pre>-- Basic select
+SELECT id, name, amount FROM my_table;
+
+-- Expressions &amp; aliases
+SELECT
+  id,
+  price * qty          AS revenue,
+  name                 AS customer,
+  42                   AS const_col,
+  'US'                 AS country
+FROM my_table;
+
+-- Select all + computed
+SELECT *, price * qty AS revenue
+FROM my_table;
+
+-- Exclude a column (Databricks SQL)
+SELECT * EXCEPT (col1, col2) FROM my_table;</pre></div>
+</div><div class="section-hdr red"><span>🔎</span>FILTER / WHERE</div><div class="dual">
+  <div class="cell-py"><div class="lang-tag py-tag">PySpark</div><pre># Basic filters
+df.filter(col("age") &gt; 18)
+df.where(col("status") == "active")
+
+# Multiple conditions
+df.filter((col("age") &gt; 18) &amp; (col("city") == "NY"))
+df.filter((col("age") &lt; 10) | (col("score") &gt; 90))
+df.filter(~col("flag"))                 # NOT
+
+# IN / NOT IN
+df.filter(col("country").isin("US","UK","CA"))
+df.filter(~col("country").isin("XX","YY"))
+
+# BETWEEN
+df.filter(col("amount").between(100, 500))
+
+# NULL checks
+df.filter(col("email").isNull())
+df.filter(col("email").isNotNull())
+
+# LIKE / RLIKE
+df.filter(col("name").like("A%"))       # SQL LIKE
+df.filter(col("email").rlike(r"@.*\.com"))  # regex
+
+# String contains/startswith/endswith
+df.filter(col("name").startswith("Jo"))
+df.filter(col("desc").contains("sale"))
+
+# expr() for complex SQL snippets
+df.filter(expr("year(created_at) = 2024"))</pre></div>
+  <div class="cell-sql"><div class="lang-tag sql-tag">Spark SQL</div><pre>-- Basic WHERE
+SELECT * FROM t WHERE age &gt; 18;
+
+-- AND / OR / NOT
+SELECT * FROM t
+WHERE age &gt; 18 AND city = 'NY';
+
+SELECT * FROM t
+WHERE age &lt; 10 OR score &gt; 90;
+
+SELECT * FROM t WHERE NOT flag;
+
+-- IN / NOT IN
+SELECT * FROM t WHERE country IN ('US','UK','CA');
+SELECT * FROM t WHERE country NOT IN ('XX','YY');
+
+-- BETWEEN (inclusive)
+SELECT * FROM t WHERE amount BETWEEN 100 AND 500;
+
+-- NULL checks
+SELECT * FROM t WHERE email IS NULL;
+SELECT * FROM t WHERE email IS NOT NULL;
+
+-- LIKE / RLIKE
+SELECT * FROM t WHERE name LIKE 'A%';
+SELECT * FROM t WHERE email RLIKE '@.*\.com';
+
+-- Year filter
+SELECT * FROM t WHERE YEAR(created_at) = 2024;</pre></div>
+</div><div class="section-hdr orange"><span>⬆</span>SORT / LIMIT / OFFSET</div><div class="dual">
+  <div class="cell-py"><div class="lang-tag py-tag">PySpark</div><pre>from pyspark.sql.functions import asc, desc
+
+df.sort("name")                         # asc default
+df.sort(col("age").desc())
+df.sort(col("dept").asc(), col("salary").desc())
+df.orderBy("age")                       # alias for sort
+
+# Limit rows
+df.limit(100)
+
+# Offset (Spark 3.4+)
+df.offset(10).limit(20)                 # rows 11-30</pre></div>
+  <div class="cell-sql"><div class="lang-tag sql-tag">Spark SQL</div><pre>-- ORDER BY
+SELECT * FROM t ORDER BY name ASC;
+SELECT * FROM t ORDER BY age DESC;
+SELECT * FROM t ORDER BY dept ASC, salary DESC;
+
+-- LIMIT
+SELECT * FROM t ORDER BY id LIMIT 100;
+
+-- OFFSET (Databricks SQL)
+SELECT * FROM t ORDER BY id LIMIT 20 OFFSET 10;</pre></div>
+</div><div class="section-hdr purple"><span>🔧</span>Column Operations</div><div class="dual">
+  <div class="cell-py"><div class="lang-tag py-tag">PySpark</div><pre>from pyspark.sql.functions import (col, when, lit, cast)
+
+# Add / overwrite column
+df.withColumn("tax", col("price") * 0.1)
+df.withColumn("price", col("price").cast("double"))
+
+# Rename
+df.withColumnRenamed("old_name","new_name")
+
+# Drop
+df.drop("col_to_remove")
+
+# Cast
+df.withColumn("age_int", col("age").cast(IntegerType()))
+df.withColumn("flag", col("val").cast("boolean"))
+
+# CASE WHEN
+df.withColumn("grade",
+    when(col("score") &gt;= 90, lit("A"))
+   .when(col("score") &gt;= 80, lit("B"))
+   .when(col("score") &gt;= 70, lit("C"))
+   .otherwise(lit("F")))
+
+# Multiple withColumns (Spark 3.3+)
+df.withColumns({
+    "tax":     col("price") * 0.1,
+    "revenue": col("price") * col("qty")})
+
+# IIF (inline if)
+from pyspark.sql.functions import iif   # Spark 3.4+
+df.withColumn("is_adult", iif(col("age") &gt;= 18, lit(True), lit(False)))</pre></div>
+  <div class="cell-sql"><div class="lang-tag sql-tag">Spark SQL</div><pre>-- Add computed column via SELECT
+SELECT *, price * 0.1 AS tax FROM t;
+
+-- CASE WHEN / ELSE
+SELECT *,
+  CASE
+    WHEN score &gt;= 90 THEN 'A'
+    WHEN score &gt;= 80 THEN 'B'
+    WHEN score &gt;= 70 THEN 'C'
+    ELSE 'F'
+  END AS grade
+FROM t;
+
+-- IIF shorthand
+SELECT *, IIF(age &gt;= 18, TRUE, FALSE) AS is_adult FROM t;
+
+-- CAST
+SELECT CAST(age AS INT), CAST(price AS DOUBLE) FROM t;
+
+-- RENAME via alias (cannot rename in-place in SQL)
+SELECT old_name AS new_name FROM t;
+
+-- ALTER TABLE RENAME COLUMN (Delta)
+ALTER TABLE my_table
+  RENAME COLUMN old_col TO new_col;
+
+-- ALTER TABLE ADD / DROP COLUMN (Delta)
+ALTER TABLE my_table ADD COLUMN new_col STRING;
+ALTER TABLE my_table DROP COLUMN unwanted_col;</pre></div>
+</div></div>
+<div class="page pg-break"><div class="page-title">📊 AGGREGATIONS · JOINS · SET OPS</div><div class="section-hdr orange"><span>📊</span>Aggregations — GROUP BY / HAVING</div><div class="dual">
+  <div class="cell-py"><div class="lang-tag py-tag">PySpark</div><pre>from pyspark.sql.functions import (
+    count, countDistinct, sum, avg, min, max,
+    collect_list, collect_set, first, last,
+    stddev, variance, skewness, kurtosis,
+    approx_count_distinct, percentile_approx)
+
+# Basic groupBy + agg
+df.groupBy("dept").agg(
+    count("*").alias("cnt"),
+    countDistinct("emp_id").alias("uniq_emp"),
+    sum("salary").alias("total_sal"),
+    avg("salary").alias("avg_sal"),
+    min("salary").alias("min_sal"),
+    max("salary").alias("max_sal"))
+
+# HAVING equivalent — filter after agg
+(df.groupBy("dept")
+   .agg(avg("salary").alias("avg_sal"))
+   .filter(col("avg_sal") &gt; 50000))
+
+# Collect values into array
+df.groupBy("dept").agg(
+    collect_list("name").alias("names"),   # with dupes
+    collect_set("name").alias("uniq_names"))# no dupes
+
+# Pivot
+df.groupBy("dept").pivot("year",
+    [2022,2023,2024]).sum("sales")
+
+# ROLLUP  (subtotals)
+df.rollup("dept","city").agg(sum("sales"))
+
+# CUBE    (all combos)
+df.cube("dept","city").agg(sum("sales"))
+
+# Approximate count (faster on large data)
+df.groupBy("country").agg(
+    approx_count_distinct("user_id", 0.05))</pre></div>
+  <div class="cell-sql"><div class="lang-tag sql-tag">Spark SQL</div><pre>-- Basic GROUP BY
+SELECT dept,
+  COUNT(*)               AS cnt,
+  COUNT(DISTINCT emp_id) AS uniq_emp,
+  SUM(salary)            AS total_sal,
+  AVG(salary)            AS avg_sal,
+  MIN(salary)            AS min_sal,
+  MAX(salary)            AS max_sal
+FROM employees
+GROUP BY dept;
+
+-- HAVING
+SELECT dept, AVG(salary) AS avg_sal
+FROM employees
+GROUP BY dept
+HAVING AVG(salary) &gt; 50000;
+
+-- Collect values
+SELECT dept,
+  COLLECT_LIST(name) AS names,
+  COLLECT_SET(name)  AS uniq_names
+FROM employees GROUP BY dept;
+
+-- PIVOT
+SELECT * FROM (SELECT dept, year, sales FROM t)
+PIVOT (SUM(sales) FOR year IN (2022,2023,2024));
+
+-- ROLLUP
+SELECT dept, city, SUM(sales)
+FROM t GROUP BY ROLLUP(dept, city);
+
+-- CUBE
+SELECT dept, city, SUM(sales)
+FROM t GROUP BY CUBE(dept, city);
+
+-- GROUPING SETS (manual control)
+SELECT dept, city, SUM(sales)
+FROM t GROUP BY GROUPING SETS(
+  (dept,city),(dept),(city),());</pre></div>
+</div><div class="section-hdr red"><span>🔗</span>Joins — All Types</div><div class="dual">
+  <div class="cell-py"><div class="lang-tag py-tag">PySpark</div><pre>from pyspark.sql.functions import broadcast
+
+# INNER JOIN
+df.join(other, on="id")
+df.join(other, on=["id","dept"])
+df.join(other, df.id == other.emp_id)
+
+# LEFT / RIGHT / FULL
+df.join(other, "id", "left")
+df.join(other, "id", "right")
+df.join(other, "id", "full")       # or "outer"/"full_outer"
+
+# LEFT SEMI (only matching left rows, no right cols)
+df.join(other, "id", "left_semi")
+
+# LEFT ANTI (only left rows with NO match)
+df.join(other, "id", "left_anti")
+
+# CROSS JOIN  (cartesian product)
+df.crossJoin(other)
+df.join(other, how="cross")
+
+# BROADCAST hint (force small table to broadcast)
+df.join(broadcast(small_df), "id")
+df.hint("broadcast").join(other, "id")
+
+# Avoid ambiguous column names
+df_a = df.alias("a")
+df_b = other.alias("b")
+df_a.join(df_b, col("a.id") == col("b.id"))\
+    .select("a.id","a.name","b.dept")</pre></div>
+  <div class="cell-sql"><div class="lang-tag sql-tag">Spark SQL</div><pre>-- INNER JOIN
+SELECT a.*, b.dept
+FROM employees a
+JOIN departments b ON a.dept_id = b.id;
+
+-- LEFT JOIN
+SELECT a.*, b.dept
+FROM employees a
+LEFT JOIN departments b ON a.dept_id = b.id;
+
+-- RIGHT / FULL OUTER
+SELECT * FROM a RIGHT JOIN b ON a.id = b.id;
+SELECT * FROM a FULL OUTER JOIN b ON a.id = b.id;
+
+-- LEFT SEMI
+SELECT a.* FROM employees a
+WHERE EXISTS (
+  SELECT 1 FROM departments b WHERE a.dept_id = b.id);
+-- or:
+SELECT * FROM a LEFT SEMI JOIN b ON a.id = b.id;
+
+-- LEFT ANTI
+SELECT * FROM a LEFT ANTI JOIN b ON a.id = b.id;
+
+-- CROSS JOIN
+SELECT * FROM a CROSS JOIN b;
+
+-- BROADCAST hint
+SELECT /*+ BROADCAST(b) */
+  a.*, b.dept
+FROM employees a JOIN departments b ON a.id = b.id;
+
+-- Multi-condition JOIN
+SELECT * FROM a JOIN b
+ON a.dept_id = b.id AND a.year = b.year;</pre></div>
+</div><div class="section-hdr teal"><span>⊕</span>Set Operations</div><div class="dual">
+  <div class="cell-py"><div class="lang-tag py-tag">PySpark</div><pre># UNION ALL  (keep duplicates)
+df1.unionAll(df2)
+df1.union(df2)       # same as unionAll in Spark
+
+# UNION (distinct rows — use distinct())
+df1.union(df2).distinct()
+
+# UNION by column name (not position)
+df1.unionByName(df2)
+df1.unionByName(df2, allowMissingColumns=True)
+
+# INTERSECT (rows in both)
+df1.intersect(df2)
+df1.intersectAll(df2)   # keep duplicates
+
+# EXCEPT / MINUS
+df1.exceptAll(df2)      # keep duplicates
+df1.subtract(df2)       # same as except(distinct)</pre></div>
+  <div class="cell-sql"><div class="lang-tag sql-tag">Spark SQL</div><pre>-- UNION ALL
+SELECT id, name FROM table1
+UNION ALL
+SELECT id, name FROM table2;
+
+-- UNION DISTINCT
+SELECT id, name FROM table1
+UNION
+SELECT id, name FROM table2;
+
+-- INTERSECT
+SELECT id FROM table1
+INTERSECT
+SELECT id FROM table2;
+
+-- INTERSECT ALL
+SELECT id FROM table1
+INTERSECT ALL
+SELECT id FROM table2;
+
+-- EXCEPT / MINUS
+SELECT id FROM table1
+EXCEPT
+SELECT id FROM table2;
+
+-- EXCEPT ALL
+SELECT id FROM table1
+EXCEPT ALL
+SELECT id FROM table2;</pre></div>
+</div></div>
+<div class="page pg-break"><div class="page-title">🪟 WINDOW FUNCTIONS · CTEs</div><div class="section-hdr purple"><span>🪟</span>Window Functions</div><div class="dual">
+  <div class="cell-py"><div class="lang-tag py-tag">PySpark</div><pre>from pyspark.sql.functions import (
+    row_number, rank, dense_rank, percent_rank,
+    ntile, lag, lead, first, last,
+    sum, avg, min, max, count,
+    unboundedPreceding as UNBD_PRE,
+    unboundedFollowing as UNBD_FOL,
+    currentRow as CUR)
+from pyspark.sql.window import Window
+
+# Define window spec
+w_dept = (Window
+    .partitionBy("dept")        # group
+    .orderBy(col("salary").desc()))
+
+# Ranking functions
+df.withColumn("rn",     row_number().over(w_dept))
+df.withColumn("rank",   rank().over(w_dept))      # gaps
+df.withColumn("drank",  dense_rank().over(w_dept))# no gaps
+df.withColumn("pct_r",  percent_rank().over(w_dept))
+df.withColumn("tile",   ntile(4).over(w_dept))    # quartile
+
+# LAG / LEAD (offset rows)
+w_time = Window.partitionBy("id").orderBy("date")
+df.withColumn("prev_val", lag("value", 1).over(w_time))
+df.withColumn("next_val", lead("value", 1).over(w_time))
+
+# Running totals / cumulative sum
+w_cum = (Window.partitionBy("dept").orderBy("date")
+         .rowsBetween(UNBD_PRE, CUR))
+df.withColumn("running_sum", sum("sales").over(w_cum))
+
+# Rolling 7-day average
+w_roll = (Window.partitionBy("id").orderBy("date")
+          .rowsBetween(-6, CUR))
+df.withColumn("roll7_avg", avg("value").over(w_roll))
+
+# Full partition aggregate (no ORDER BY)
+w_part = Window.partitionBy("dept")
+df.withColumn("dept_total", sum("sales").over(w_part))
+df.withColumn("dept_avg",   avg("salary").over(w_part))
+
+# Top-N per group
+top2 = (df.withColumn("rn", row_number().over(w_dept))
+          .filter(col("rn") &lt;= 2))</pre></div>
+  <div class="cell-sql"><div class="lang-tag sql-tag">Spark SQL</div><pre>-- Ranking
+SELECT *, 
+  ROW_NUMBER() OVER(PARTITION BY dept ORDER BY salary DESC) AS rn,
+  RANK()       OVER(PARTITION BY dept ORDER BY salary DESC) AS rnk,
+  DENSE_RANK() OVER(PARTITION BY dept ORDER BY salary DESC) AS drnk,
+  PERCENT_RANK()OVER(PARTITION BY dept ORDER BY salary DESC)AS pct,
+  NTILE(4)     OVER(PARTITION BY dept ORDER BY salary DESC) AS quartile
+FROM employees;
+
+-- LAG / LEAD
+SELECT *,
+  LAG(value,  1) OVER(PARTITION BY id ORDER BY date) AS prev_val,
+  LEAD(value, 1) OVER(PARTITION BY id ORDER BY date) AS next_val
+FROM series;
+
+-- Running total (cumulative sum)
+SELECT *,
+  SUM(sales) OVER(
+    PARTITION BY dept ORDER BY date
+    ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+  ) AS running_sum
+FROM sales;
+
+-- 7-day rolling average
+SELECT *,
+  AVG(value) OVER(
+    PARTITION BY id ORDER BY date
+    ROWS BETWEEN 6 PRECEDING AND CURRENT ROW
+  ) AS roll7_avg
+FROM metrics;
+
+-- Partition total (full window, no order)
+SELECT *,
+  SUM(sales) OVER(PARTITION BY dept) AS dept_total,
+  AVG(salary)OVER(PARTITION BY dept) AS dept_avg
+FROM employees;
+
+-- Top-N per group (CTE approach)
+WITH ranked AS (
+  SELECT *, ROW_NUMBER() OVER(
+    PARTITION BY dept ORDER BY salary DESC) AS rn
+  FROM employees)
+SELECT * FROM ranked WHERE rn &lt;= 2;</pre></div>
+</div><div class="section-hdr indigo"><span>📐</span>Subqueries & CTEs</div><div class="dual">
+  <div class="cell-py"><div class="lang-tag py-tag">PySpark</div><pre>from pyspark.sql.functions import col
+
+# Subquery via filter + isin
+ids = df2.select("id").rdd.flatMap(lambda r: r).collect()
+df.filter(col("id").isin(ids))          # caution: driver collect
+
+# Better: use join instead of subquery
+df.join(df2.select("id"), "id", "left_semi")
+
+# CTE equivalent — createOrReplaceTempView
+df.createOrReplaceTempView("orders")
+df2.createOrReplaceTempView("customers")
+result = spark.sql('''
+    WITH recent AS (
+        SELECT * FROM orders WHERE year = 2024
+    ),
+    big AS (
+        SELECT * FROM recent WHERE amount &gt; 1000
+    )
+    SELECT c.name, b.amount
+    FROM big b JOIN customers c ON b.cust_id = c.id
+''')
+
+# Scalar subquery via expr
+df.withColumn("dept_avg",
+    expr("(SELECT AVG(salary) FROM employees e2 " +
+         "WHERE e2.dept = dept)"))      # correlated
+
+# Global temp view (across sessions)
+df.createGlobalTempView("shared_view")
+spark.sql("SELECT * FROM global_temp.shared_view")</pre></div>
+  <div class="cell-sql"><div class="lang-tag sql-tag">Spark SQL</div><pre>-- Subquery in WHERE
+SELECT * FROM orders
+WHERE cust_id IN (
+  SELECT id FROM customers WHERE country = 'US');
+
+-- Correlated subquery
+SELECT *, (
+  SELECT AVG(salary) FROM employees e2
+  WHERE e2.dept = e.dept) AS dept_avg
+FROM employees e;
+
+-- EXISTS subquery
+SELECT * FROM employees e
+WHERE EXISTS (
+  SELECT 1 FROM bonuses b WHERE b.emp_id = e.id);
+
+-- CTE (WITH clause)
+WITH recent AS (
+  SELECT * FROM orders WHERE year = 2024
+),
+big AS (
+  SELECT * FROM recent WHERE amount &gt; 1000
+)
+SELECT c.name, b.amount
+FROM big b
+JOIN customers c ON b.cust_id = c.id;
+
+-- Lateral VIEW (inline table function)
+SELECT id, tag
+FROM posts
+LATERAL VIEW explode(tags) tv AS tag;
+
+-- Scalar subquery in SELECT
+SELECT name,
+  (SELECT MAX(salary) FROM employees) AS max_sal
+FROM employees;</pre></div>
+</div></div>
+<div class="page pg-break"><div class="page-title">🔤 STRING · DATE · NULL HANDLING</div><div class="section-hdr teal"><span>🔤</span>String Functions</div><div class="dual">
+  <div class="cell-py"><div class="lang-tag py-tag">PySpark</div><pre>from pyspark.sql.functions import (
+    upper, lower, trim, ltrim, rtrim,
+    length, substr, substring, instr,
+    concat, concat_ws, split, replace,
+    regexp_replace, regexp_extract,
+    lpad, rpad, repeat, reverse,
+    initcap, locate, ascii, char,
+    format_string, translate, overlay,
+    left, right, startswith, endswith)
+
+f = col("name")
+df.withColumn("up",     upper(f))
+df.withColumn("lo",     lower(f))
+df.withColumn("trim",   trim(f))
+df.withColumn("len",    length(f))
+df.withColumn("sub",    substr(f, 1, 5))  # 1-indexed
+df.withColumn("pos",    instr(f, "Jo"))   # 0 if not found
+df.withColumn("cat",    concat(f, lit("-"), col("dept")))
+df.withColumn("catws",  concat_ws("|","a","b","c"))
+df.withColumn("split",  split(col("csv"), ","))  # → array
+df.withColumn("rep",    regexp_replace(f, r"\d+", ""))
+df.withColumn("ext",    regexp_extract(f, r"(\d+)", 1))
+df.withColumn("lpad",   lpad(f, 10, "0"))  # zero-pad
+df.withColumn("ic",     initcap(f))        # Title Case
+df.withColumn("fmt",    format_string("%s_%03d", f, col("id")))
+df.withColumn("left5",  left(f, 5))
+df.withColumn("right3", right(f, 3))</pre></div>
+  <div class="cell-sql"><div class="lang-tag sql-tag">Spark SQL</div><pre>SELECT
+  UPPER(name),
+  LOWER(name),
+  TRIM(name),       -- both sides
+  LTRIM(name),
+  RTRIM(name),
+  LENGTH(name),
+  SUBSTR(name, 1, 5),      -- 1-indexed
+  INSTR(name, 'Jo'),       -- 0 if not found
+  CONCAT(name, '-', dept),
+  CONCAT_WS('|', 'a', 'b', 'c'),
+  SPLIT(csv_col, ','),     -- returns array
+  REGEXP_REPLACE(name, '\\d+', ''),
+  REGEXP_EXTRACT(name, '(\\d+)', 1),
+  LPAD(name, 10, '0'),
+  INITCAP(name),           -- Title Case
+  FORMAT_STRING('%s_%03d', name, id),
+  LEFT(name, 5),
+  RIGHT(name, 3),
+  STARTSWITH(name, 'Jo'),  -- boolean
+  ENDSWITH(name, 'son'),
+  CONTAINS(name, 'Jo'),
+  REPLACE(name, 'old', 'new'),
+  OVERLAY(name PLACING 'XX' FROM 2 FOR 3)
+FROM my_table;</pre></div>
+</div><div class="section-hdr teal"><span>📅</span>Date / Time Functions</div><div class="dual">
+  <div class="cell-py"><div class="lang-tag py-tag">PySpark</div><pre>from pyspark.sql.functions import (
+    current_date, current_timestamp,
+    date_add, date_sub, datediff,
+    months_between, add_months,
+    year, quarter, month, dayofmonth,
+    dayofweek, dayofyear, weekofyear,
+    hour, minute, second,
+    to_date, to_timestamp,
+    date_format, date_trunc, trunc,
+    unix_timestamp, from_unixtime,
+    last_day, next_day, from_utc_timestamp)
+
+df.withColumn("today",   current_date())
+df.withColumn("now",     current_timestamp())
+df.withColumn("d_add",   date_add(col("dt"), 7))
+df.withColumn("diff",    datediff(col("end"), col("start")))
+df.withColumn("yr",      year(col("dt")))
+df.withColumn("mo",      month(col("dt")))
+df.withColumn("dom",     dayofmonth(col("dt")))
+df.withColumn("dow",     dayofweek(col("dt")))  # 1=Sun
+df.withColumn("hr",      hour(col("ts")))
+df.withColumn("fmt",     date_format(col("dt"), "yyyy-MM-dd"))
+df.withColumn("trunc_m", date_trunc("month", col("ts")))
+df.withColumn("parsed",  to_date(col("str_dt"), "MM/dd/yyyy"))
+df.withColumn("unix",    unix_timestamp(col("ts")))
+df.withColumn("from_u",  from_unixtime(col("epoch")))
+df.withColumn("last_d",  last_day(col("dt")))
+df.withColumn("add_3mo", add_months(col("dt"), 3))
+df.withColumn("utc",     from_utc_timestamp(col("ts"),"UTC"))</pre></div>
+  <div class="cell-sql"><div class="lang-tag sql-tag">Spark SQL</div><pre>SELECT
+  CURRENT_DATE(),
+  CURRENT_TIMESTAMP(),
+  DATE_ADD(dt, 7),
+  DATE_SUB(dt, 30),
+  DATEDIFF(end_dt, start_dt),      -- days between
+  MONTHS_BETWEEN(end_dt, start_dt),
+  ADD_MONTHS(dt, 3),
+  YEAR(dt), QUARTER(dt),
+  MONTH(dt), DAYOFMONTH(dt),
+  DAYOFWEEK(dt),                   -- 1=Sunday
+  DAYOFYEAR(dt), WEEKOFYEAR(dt),
+  HOUR(ts), MINUTE(ts), SECOND(ts),
+  DATE_FORMAT(dt, 'yyyy-MM-dd'),
+  DATE_TRUNC('MONTH', ts),
+  TRUNC(dt, 'MM'),
+  TO_DATE('2024-01-15', 'yyyy-MM-dd'),
+  TO_TIMESTAMP('2024-01-15 10:30', 'yyyy-MM-dd HH:mm'),
+  UNIX_TIMESTAMP(ts),
+  FROM_UNIXTIME(epoch_col),
+  LAST_DAY(dt),
+  NEXT_DAY(dt, 'MON'),
+  FROM_UTC_TIMESTAMP(ts, 'America/New_York'),
+  TIMESTAMPDIFF(DAY, start_dt, end_dt)
+FROM my_table;</pre></div>
+</div><div class="section-hdr pink"><span>❓</span>Null Handling</div><div class="dual">
+  <div class="cell-py"><div class="lang-tag py-tag">PySpark</div><pre>from pyspark.sql.functions import (
+    isnull, isnan, coalesce, nullif,
+    nanvl, when, col)
+
+# Drop rows with nulls
+df.dropna()                          # any null
+df.dropna(how="all")                 # all cols null
+df.dropna(subset=["email","phone"])  # specific cols
+df.dropna(thresh=3)                  # need ≥3 non-null
+
+# Fill nulls
+df.fillna(0)                         # all numeric
+df.fillna({"age":0,"name":"Unknown","active":False})
+
+# Replace nulls with coalesce (first non-null)
+df.withColumn("email2",
+    coalesce(col("email"), col("backup_email"), lit("N/A")))
+
+# NULLIF — return null if two values are equal
+from pyspark.sql.functions import nullif
+df.withColumn("safe_div",
+    col("a") / nullif(col("b"), lit(0)))
+
+# Check null / NaN
+df.filter(isnull(col("val")))
+df.filter(isnan(col("val")))
+df.filter(col("val").isNull())
+
+# Replace NaN with null then fill
+from pyspark.sql.functions import nanvl
+df.withColumn("clean", nanvl(col("score"), lit(None)))</pre></div>
+  <div class="cell-sql"><div class="lang-tag sql-tag">Spark SQL</div><pre>-- Drop handled in PySpark (no SQL DROP ROWS)
+-- Use filter:
+SELECT * FROM t WHERE email IS NOT NULL;
+
+-- COALESCE — first non-null value
+SELECT
+  COALESCE(email, backup_email, 'N/A') AS email2
+FROM users;
+
+-- NVL — 2-argument coalesce (Databricks SQL)
+SELECT NVL(email, 'N/A') FROM users;
+
+-- NVL2(expr, val_if_not_null, val_if_null)
+SELECT NVL2(email, 'has email', 'no email') FROM users;
+
+-- NULLIF — return null if equal to 2nd arg
+SELECT a / NULLIF(b, 0) AS safe_div FROM t;
+
+-- IFNULL (alias for NVL)
+SELECT IFNULL(score, 0) FROM t;
+
+-- IS NULL / IS NOT NULL
+SELECT * FROM t WHERE val IS NULL;
+SELECT * FROM t WHERE val IS NOT NULL;
+
+-- Replace nulls in aggregations
+SELECT dept,
+  AVG(COALESCE(salary, 0)) AS avg_sal
+FROM employees GROUP BY dept;</pre></div>
+</div></div>
+<div class="page pg-break"><div class="page-title">📦 ARRAY · MAP · NUMERIC · UDFs</div><div class="section-hdr brown"><span>📦</span>Array Functions</div><div class="dual">
+  <div class="cell-py"><div class="lang-tag py-tag">PySpark</div><pre>from pyspark.sql.functions import (
+    array, array_contains, array_distinct,
+    array_except, array_intersect, array_union,
+    array_join, array_max, array_min,
+    array_position, array_remove,
+    array_repeat, array_reverse, array_size,
+    array_sort, array_zip, arrays_overlap,
+    element_at, explode, explode_outer,
+    posexplode, flatten, sequence,
+    slice, sort_array, transform, filter,
+    aggregate, forall, exists, zip_with,
+    array_compact, arrays_zip)
+
+# Create array column
+df.withColumn("arr", array(col("a"), col("b"), col("c")))
+
+# Check membership
+df.filter(array_contains(col("tags"), "python"))
+
+# Distinct / sort / reverse
+df.withColumn("uq",  array_distinct(col("items")))
+df.withColumn("srt", array_sort(col("items")))
+df.withColumn("rev", array_reverse(col("items")))
+
+# Size / element access
+df.withColumn("sz",  array_size(col("items")))  # -1 if null
+df.withColumn("el",  element_at(col("items"), 1)) # 1-indexed
+
+# Set operations on arrays
+df.withColumn("exc",  array_except(col("a"), col("b")))
+df.withColumn("intx", array_intersect(col("a"), col("b")))
+df.withColumn("uni",  array_union(col("a"), col("b")))
+
+# Join array to string
+df.withColumn("str", array_join(col("tags"), ",",""))
+
+# Flatten nested arrays
+df.withColumn("flat", flatten(col("nested_arr")))
+
+# Sequence (generate range)
+df.withColumn("seq", sequence(lit(1), lit(10)))
+
+# Slice (subset)
+df.withColumn("sl",  slice(col("arr"), 1, 3))  # pos, len
+
+# Explode (one row per element)
+df.select("id", explode(col("tags")).alias("tag"))
+df.select("id", explode_outer(col("tags")).alias("tag"))  # keep nulls
+df.select("id", posexplode(col("tags")).alias("pos","tag"))
+
+# Higher-order: transform / filter / aggregate
+from pyspark.sql.functions import transform, filter as fil, aggregate
+df.withColumn("doubled",   transform(col("nums"), lambda x: x * 2))
+df.withColumn("pos_only",  fil(col("nums"), lambda x: x &gt; 0))
+df.withColumn("total",     aggregate(col("nums"), lit(0), lambda acc,x: acc+x))
+df.withColumn("all_pos",   forall(col("nums"), lambda x: x &gt; 0))
+df.withColumn("any_pos",   exists(col("nums"), lambda x: x &gt; 0))</pre></div>
+  <div class="cell-sql"><div class="lang-tag sql-tag">Spark SQL</div><pre>-- Array literal
+SELECT ARRAY(1, 2, 3) AS nums;
+SELECT ARRAY('a','b','c') AS letters;
+
+-- Check membership
+SELECT * FROM t WHERE ARRAY_CONTAINS(tags, 'python');
+
+-- Size / element
+SELECT ARRAY_SIZE(items), ELEMENT_AT(items, 1) FROM t;
+
+-- Set ops on arrays
+SELECT
+  ARRAY_DISTINCT(items)          AS uniq,
+  ARRAY_SORT(items)              AS sorted,
+  ARRAY_REVERSE(items)           AS reversed,
+  ARRAY_EXCEPT(a, b)             AS diff,
+  ARRAY_INTERSECT(a, b)          AS common,
+  ARRAY_UNION(a, b)              AS merged,
+  ARRAY_JOIN(tags, ',', '')      AS csv_tags,
+  FLATTEN(nested)                AS flat,
+  SLICE(arr, 1, 3)               AS first3
+FROM my_table;
+
+-- Sequence
+SELECT SEQUENCE(1, 10)  AS nums;  -- [1,2,...,10]
+SELECT SEQUENCE(date'2024-01-01', date'2024-01-07',
+  INTERVAL 1 DAY) AS days;
+
+-- Explode (one row per element)
+SELECT id, tag
+FROM my_table
+LATERAL VIEW EXPLODE(tags) tv AS tag;
+
+-- Explode with position
+SELECT id, pos, tag
+FROM my_table
+LATERAL VIEW POSEXPLODE(tags) tv AS pos, tag;
+
+-- OUTER explode (keep rows with null/empty arrays)
+SELECT id, tag
+FROM my_table
+LATERAL VIEW OUTER EXPLODE(tags) tv AS tag;
+
+-- Higher-order functions
+SELECT
+  TRANSFORM(nums, x -&gt; x * 2)           AS doubled,
+  FILTER(nums, x -&gt; x &gt; 0)              AS positives,
+  AGGREGATE(nums, 0, (acc,x) -&gt; acc+x)  AS total,
+  FORALL(nums, x -&gt; x &gt; 0)             AS all_positive,
+  EXISTS(nums, x -&gt; x &gt; 0)             AS any_positive,
+  ZIP_WITH(a, b, (x,y) -&gt; x + y)       AS zipped_sum
+FROM my_table;</pre></div>
+</div><div class="section-hdr brown"><span>🗺</span>Map Functions</div><div class="dual">
+  <div class="cell-py"><div class="lang-tag py-tag">PySpark</div><pre>from pyspark.sql.functions import (
+    create_map, map_keys, map_values,
+    map_contains_key, map_filter,
+    map_from_entries, map_from_arrays,
+    map_concat, element_at,
+    explode, map_entries,
+    size, map_zip_with, str_to_map)
+
+# Create map column
+df.withColumn("m",
+    create_map(lit("k1"), col("v1"),
+               lit("k2"), col("v2")))
+
+# Keys / values
+df.withColumn("keys",  map_keys(col("props")))
+df.withColumn("vals",  map_values(col("props")))
+
+# Lookup value
+df.withColumn("v",  element_at(col("props"), "key1"))
+df.withColumn("ok", map_contains_key(col("props"),"k"))
+
+# Build map from 2 arrays
+df.withColumn("m", map_from_arrays(col("ks"), col("vs")))
+
+# From array of structs (entries)
+df.withColumn("m", map_from_entries(col("kvs")))
+
+# Merge maps
+df.withColumn("merged", map_concat(col("m1"), col("m2")))
+
+# Filter map entries
+df.withColumn("filt",
+    map_filter(col("props"), lambda k,v: v &gt; 100))
+
+# Explode map → rows of key/value
+df.select("id", explode(col("props")).alias("key","val"))
+
+# String to map
+df.withColumn("m", str_to_map(col("s"), lit(","), lit(":")))</pre></div>
+  <div class="cell-sql"><div class="lang-tag sql-tag">Spark SQL</div><pre>-- Create map literal
+SELECT MAP('k1', 1, 'k2', 2) AS m;
+
+-- Keys / values / size
+SELECT
+  MAP_KEYS(props)            AS ks,
+  MAP_VALUES(props)          AS vs,
+  CARDINALITY(props)         AS sz,    -- or SIZE()
+  ELEMENT_AT(props, 'key1')  AS val,
+  props['key1']              AS val2   -- bracket notation
+FROM my_table;
+
+-- Build map from arrays
+SELECT MAP_FROM_ARRAYS(key_arr, val_arr) AS m FROM t;
+
+-- From array&lt;struct&lt;key,value&gt;&gt;
+SELECT MAP_FROM_ENTRIES(entries_col) AS m FROM t;
+
+-- Merge maps
+SELECT MAP_CONCAT(m1, m2) AS merged FROM t;
+
+-- Higher-order: filter / transform values
+SELECT
+  MAP_FILTER(props, (k,v) -&gt; v &gt; 100) AS big_vals,
+  TRANSFORM_VALUES(props, (k,v) -&gt; v * 2) AS doubled,
+  TRANSFORM_KEYS(props, (k,v) -&gt; UPPER(k)) AS upper_keys
+FROM my_table;
+
+-- Explode map → rows
+SELECT id, key, value
+FROM my_table
+LATERAL VIEW EXPLODE(props) tv AS key, value;</pre></div>
+</div><div class="section-hdr gray"><span>🔢</span>Numeric Functions</div><div class="dual">
+  <div class="cell-py"><div class="lang-tag py-tag">PySpark</div><pre>from pyspark.sql.functions import (
+    round, bround, ceil, floor, abs,
+    pow, sqrt, log, log2, log10, exp,
+    sin, cos, tan, asin, acos, atan,
+    signum, greatest, least,
+    rand, randn, shiftLeft, shiftRight,
+    factorial, pmod, format_number)
+
+df.withColumn("rd",  round(col("x"), 2))   # banker's by default
+df.withColumn("br",  bround(col("x"), 2))  # round half even
+df.withColumn("cl",  ceil(col("x")))
+df.withColumn("fl",  floor(col("x")))
+df.withColumn("ab",  abs(col("x")))
+df.withColumn("pw",  pow(col("x"), 2))
+df.withColumn("sq",  sqrt(col("x")))
+df.withColumn("lg",  log(col("x")))        # natural log
+df.withColumn("l2",  log2(col("x")))
+df.withColumn("ex",  exp(col("x")))
+df.withColumn("mo",  pmod(col("x"), lit(7))) # positive mod
+df.withColumn("gr",  greatest(col("a"),col("b"),col("c")))
+df.withColumn("ls",  least(col("a"),col("b"),col("c")))
+df.withColumn("rnd", rand(seed=42))        # uniform [0,1)
+df.withColumn("fmt", format_number(col("x"), 2))  # "1,234.56"</pre></div>
+  <div class="cell-sql"><div class="lang-tag sql-tag">Spark SQL</div><pre>SELECT
+  ROUND(x, 2),
+  CEIL(x),     FLOOR(x),
+  ABS(x),
+  POW(x, 2),   SQRT(x),
+  LOG(x),      LOG2(x),   LOG10(x),
+  EXP(x),
+  MOD(x, 7),   PMOD(x, 7),   -- PMOD always positive
+  GREATEST(a, b, c),
+  LEAST(a, b, c),
+  RAND(),      RANDN(),       -- random values
+  FORMAT_NUMBER(x, 2),        -- '1,234.56'
+  SIGN(x),                    -- -1 / 0 / 1
+  FACTORIAL(n),
+  SHIFTLEFT(x,  2),          -- x &lt;&lt; 2
+  SHIFTRIGHT(x, 2),          -- x &gt;&gt; 2
+  HEX(x),     UNHEX(hex_col),
+  CONV(x, 10, 16)             -- base conversion
+FROM my_table;</pre></div>
+</div></div>
+<div class="page pg-break"><div class="page-title">💾 WRITE DATA · △ DELTA LAKE</div><div class="section-hdr green"><span>🐍</span>User-Defined Functions (UDFs)</div><div class="dual">
+  <div class="cell-py"><div class="lang-tag py-tag">PySpark</div><pre>from pyspark.sql.functions import udf
+from pyspark.sql.types import StringType, DoubleType
+
+# ── Standard Python UDF (serialization overhead) ──────
+@udf(returnType=StringType())
+def grade(score):
+    if score is None: return None
+    if score &gt;= 90: return 'A'
+    elif score &gt;= 80: return 'B'
+    return 'C'
+
+df.withColumn("grade", grade(col("score")))
+
+# Register for SQL
+spark.udf.register("grade_sql", grade)
+
+# ── Pandas UDF (vectorized, 10-100x faster) ───────────
+from pyspark.sql.functions import pandas_udf
+import pandas as pd
+
+@pandas_udf(DoubleType())
+def normalize(s: pd.Series) -&gt; pd.Series:
+    return (s - s.mean()) / s.std()
+
+df.withColumn("norm", normalize(col("value")))
+
+# ── Pandas UDF — grouped map (arbitrary groupBy) ──────
+from pyspark.sql.functions import PandasUDFType
+from pyspark.sql.types import StructType, StructField, IntegerType
+
+schema = StructType([
+    StructField("id", IntegerType()),
+    StructField("value", DoubleType())])
+
+@pandas_udf(schema, PandasUDFType.GROUPED_MAP)
+def normalize_group(pdf: pd.DataFrame) -&gt; pd.DataFrame:
+    pdf["value"] = (pdf["value"] - pdf["value"].mean())
+    return pdf
+
+df.groupBy("group").apply(normalize_group)
+
+# ── Spark SQL UDFs via spark.sql ──────────────────────
+spark.udf.register("my_fn", lambda x: x.upper(), StringType())
+spark.sql("SELECT my_fn(name) FROM employees")</pre></div>
+  <div class="cell-sql"><div class="lang-tag sql-tag">Spark SQL</div><pre>-- Use a registered UDF in SQL
+-- (Register in PySpark first: spark.udf.register(...))
+
+-- Call UDF
+SELECT grade_sql(score) AS letter_grade
+FROM students;
+
+-- Register using SQL function (Databricks)
+CREATE OR REPLACE FUNCTION catalog.schema.my_fn(x STRING)
+  RETURNS STRING
+  RETURN UPPER(x);
+
+-- Call the SQL function
+SELECT catalog.schema.my_fn(name) FROM employees;
+
+-- Drop the function
+DROP FUNCTION IF EXISTS catalog.schema.my_fn;
+
+-- List functions
+SHOW FUNCTIONS IN catalog.schema;
+
+-- Built-in function reference
+DESCRIBE FUNCTION EXTENDED my_fn;</pre></div>
+</div><div class="section-hdr green"><span>💾</span>Writing Data</div><div class="dual">
+  <div class="cell-py"><div class="lang-tag py-tag">PySpark</div><pre># ── Write modes ───────────────────────────────────────
+# overwrite, append, ignore, errorIfExists
+
+# Parquet (columnar, preferred)
+df.write.mode("overwrite").parquet("/path/out/")
+
+# Delta (best for Databricks)
+df.write.format("delta").mode("overwrite").save("/delta/out")
+df.write.saveAsTable("catalog.schema.table")  # managed table
+
+# CSV
+(df.write.mode("overwrite")
+   .option("header","true")
+   .option("sep",",")
+   .csv("/path/out.csv"))
+
+# JSON
+df.write.mode("overwrite").json("/path/out.json")
+
+# JDBC
+(df.write.format("jdbc")
+   .option("url","jdbc:postgresql://host/db")
+   .option("dbtable","schema.output")
+   .option("user","u").option("password","p")
+   .mode("append").save())
+
+# Partitioned write (important for performance!)
+(df.write.mode("overwrite")
+   .partitionBy("year","month")
+   .parquet("/path/partitioned/"))
+
+# Bucketed write (co-locate join keys)
+(df.write.mode("overwrite")
+   .bucketBy(64, "user_id")
+   .sortBy("user_id")
+   .saveAsTable("bucketed_table"))
+
+# Coalesce before write (reduce small files)
+df.coalesce(1).write.mode("overwrite").csv("/single_file/")
+
+# Repartition before write
+df.repartition(10).write.parquet("/path/")</pre></div>
+  <div class="cell-sql"><div class="lang-tag sql-tag">Spark SQL</div><pre>-- Write via CTAS (Create Table As Select)
+CREATE OR REPLACE TABLE catalog.schema.output
+USING DELTA
+PARTITIONED BY (year, month)
+AS SELECT * FROM source_view;
+
+-- INSERT INTO existing table
+INSERT INTO catalog.schema.output
+SELECT * FROM source WHERE year = 2024;
+
+-- INSERT OVERWRITE (replace all data)
+INSERT OVERWRITE catalog.schema.output
+SELECT * FROM source;
+
+-- COPY INTO (idempotent incremental load)
+COPY INTO catalog.schema.target
+FROM '/path/files/'
+FILEFORMAT = PARQUET
+COPY_OPTIONS ('mergeSchema' = 'true');
+
+-- Write to JDBC (no direct SQL - use PySpark)
+-- Partition management
+ALTER TABLE t ADD PARTITION (year=2024, month=1);
+ALTER TABLE t DROP PARTITION (year=2022);
+
+-- Show table files/info
+DESCRIBE DETAIL catalog.schema.output;</pre></div>
+</div><div class="section-hdr red"><span>△</span>Delta Lake — Full Reference</div><div class="dual">
+  <div class="cell-py"><div class="lang-tag py-tag">PySpark</div><pre># ── Delta Table CRUD ──────────────────────────────────
+from delta.tables import DeltaTable
+
+# Create managed Delta table
+(df.write.format("delta")
+   .mode("overwrite")
+   .saveAsTable("default.customers"))
+
+# Read Delta
+df = spark.read.table("default.customers")
+df = spark.read.format("delta").load("/delta/path")
+
+# Update rows
+dt = DeltaTable.forName(spark, "default.customers")
+dt.update(
+    condition = col("country") == "USA",
+    set       = {"country": lit("US")})
+
+# Delete rows
+dt.delete(condition = col("active") == False)
+
+# MERGE / Upsert
+(dt.alias("tgt")
+   .merge(updates.alias("src"), "tgt.id = src.id")
+   .whenMatchedUpdate(set={"name": col("src.name"),
+                           "ts":   col("src.ts")})
+   .whenNotMatchedInsertAll()
+   .whenNotMatchedBySourceDelete()   # Spark 3.4+
+   .execute())
+
+# ── History &amp; Time Travel ─────────────────────────────
+dt.history().show(5)               # audit log
+# By version
+df_v2 = (spark.read.format("delta")
+             .option("versionAsOf", 2)
+             .load("/delta/path"))
+# By timestamp
+df_ts = (spark.read.format("delta")
+             .option("timestampAsOf","2024-01-01")
+             .load("/delta/path"))
+
+# RESTORE to earlier version
+dt.restoreToVersion(3)
+dt.restoreToTimestamp("2024-01-01 00:00:00")
+
+# ── Optimize ──────────────────────────────────────────
+dt.optimize().executeCompaction()
+dt.optimize().executeZOrderBy("user_id","date")
+
+# ── Vacuum (remove old files) ─────────────────────────
+dt.vacuum()              # default 7-day retention
+dt.vacuum(retentionHours=168)
+
+# ── Schema Evolution ──────────────────────────────────
+(df.write.format("delta")
+   .option("mergeSchema","true")
+   .mode("append").save("/delta/path"))
+
+# ── Change Data Feed ──────────────────────────────────
+# Enable on table
+spark.sql("ALTER TABLE t SET TBLPROPERTIES"
+          "('delta.enableChangeDataFeed'='true')")
+# Read changes
+changes = (spark.read.format("delta")
+    .option("readChangeData","true")
+    .option("startingVersion", 5)
+    .table("default.customers"))</pre></div>
+  <div class="cell-sql"><div class="lang-tag sql-tag">Spark SQL</div><pre>-- Create Delta table
+CREATE TABLE IF NOT EXISTS catalog.schema.customers (
+  id     BIGINT,
+  name   STRING,
+  email  STRING,
+  ts     TIMESTAMP)
+USING DELTA
+LOCATION '/delta/customers';
+
+-- INSERT / UPDATE / DELETE
+INSERT INTO customers VALUES (1,'Alice','a@b.com',NOW());
+UPDATE customers SET email='new@b.com' WHERE id = 1;
+DELETE FROM customers WHERE active = FALSE;
+
+-- MERGE (Upsert)
+MERGE INTO customers AS tgt
+USING updates AS src ON tgt.id = src.id
+WHEN MATCHED THEN
+  UPDATE SET name=src.name, ts=src.ts
+WHEN NOT MATCHED THEN
+  INSERT (id,name,email,ts)
+  VALUES (src.id,src.name,src.email,src.ts)
+WHEN NOT MATCHED BY SOURCE THEN DELETE;
+
+-- History (audit log)
+DESCRIBE HISTORY customers;
+DESCRIBE HISTORY customers LIMIT 5;
+
+-- Time travel by version
+SELECT * FROM customers VERSION AS OF 2;
+SELECT * FROM customers@v2;            -- shorthand
+
+-- Time travel by timestamp
+SELECT * FROM customers
+TIMESTAMP AS OF '2024-01-01T00:00:00';
+
+-- RESTORE
+RESTORE TABLE customers TO VERSION AS OF 3;
+RESTORE TABLE customers
+  TO TIMESTAMP AS OF '2024-01-01';
+
+-- OPTIMIZE + ZORDER (file compaction)
+OPTIMIZE customers;
+OPTIMIZE customers ZORDER BY (user_id, date);
+
+-- VACUUM (remove old files)
+VACUUM customers;                      -- 7-day default
+VACUUM customers RETAIN 168 HOURS;
+
+-- Schema evolution
+ALTER TABLE customers ADD COLUMN phone STRING;
+ALTER TABLE customers DROP COLUMN old_field;
+
+-- Table properties
+ALTER TABLE customers
+  SET TBLPROPERTIES (
+    'delta.enableChangeDataFeed' = 'true',
+    'delta.autoOptimize.optimizeWrite' = 'true',
+    'delta.autoOptimize.autoCompact' = 'true');
+
+-- Change Data Feed
+SELECT * FROM table_changes('customers', 5);
+
+-- Clone Delta table (shallow = metadata only)
+CREATE TABLE cloned SHALLOW CLONE customers;
+CREATE TABLE cloned DEEP    CLONE customers;</pre></div>
+</div></div>
+<div class="page pg-break"><div class="page-title">🌊 STRUCTURED STREAMING</div><div class="section-hdr indigo"><span>🌊</span>Structured Streaming — Sources</div><div class="dual">
+  <div class="cell-py"><div class="lang-tag py-tag">PySpark</div><pre># ── Rate source (testing) ─────────────────────────────
+stream = (spark.readStream
+    .format("rate")
+    .option("rowsPerSecond", 10)
+    .load())                           # cols: timestamp, value
+
+# ── Kafka source ──────────────────────────────────────
+from pyspark.sql.functions import from_json, col
+from pyspark.sql.types import StructType, StringType, LongType
+
+msg_schema = StructType([
+    StructField("id",    LongType()),
+    StructField("event", StringType())])
+
+kafka_df = (spark.readStream
+    .format("kafka")
+    .option("kafka.bootstrap.servers","broker:9092")
+    .option("subscribe","my-topic")
+    .option("startingOffsets","earliest")
+    .option("maxOffsetsPerTrigger", 10000)
+    .load()
+    # Kafka gives bytes — parse the value
+    .select(
+        col("key").cast("string"),
+        from_json(col("value").cast("string"),
+                  msg_schema).alias("data"),
+        col("timestamp"))
+    .select("key","data.*","timestamp"))
+
+# ── Delta source (continuous reading) ─────────────────
+delta_stream = (spark.readStream
+    .format("delta")
+    .option("ignoreDeletes","true")     # skip delete records
+    .option("ignoreChanges","true")     # skip update records
+    .table("default.bronze_events"))
+
+# ── Auto Loader (Databricks optimized) ────────────────
+auto_df = (spark.readStream
+    .format("cloudFiles")
+    .option("cloudFiles.format","parquet")
+    .option("cloudFiles.schemaLocation","/checkpoints/schema")
+    .load("/landing/zone/"))</pre></div>
+  <div class="cell-sql"><div class="lang-tag sql-tag">Spark SQL</div><pre>-- Streaming in SQL (Databricks)
+-- Run as STREAMING LIVE TABLE or use stream_ prefix
+
+-- Declare streaming table (Delta Live Tables)
+CREATE OR REFRESH STREAMING TABLE bronze_events
+AS SELECT *
+FROM STREAM(catalog.schema.landing_json);
+
+-- Streaming table with schema
+CREATE OR REFRESH STREAMING TABLE silver_events (
+  id      BIGINT,
+  event   STRING,
+  ts      TIMESTAMP
+)
+AS SELECT
+  data:id::BIGINT   AS id,
+  data:event        AS event,
+  timestamp         AS ts
+FROM STREAM(catalog.schema.bronze_events)
+WHERE data IS NOT NULL;
+
+-- Materialized view (always-fresh aggregate)
+CREATE OR REFRESH MATERIALIZED VIEW hourly_counts
+AS SELECT
+  DATE_TRUNC('HOUR', ts) AS hour,
+  COUNT(*)               AS cnt
+FROM catalog.schema.silver_events
+GROUP BY 1;</pre></div>
+</div><div class="section-hdr indigo"><span>⚙</span>Streaming — Transforms & Sinks</div><div class="dual">
+  <div class="cell-py"><div class="lang-tag py-tag">PySpark</div><pre>from pyspark.sql.functions import (
+    window, watermark, col, count, sum)
+
+# ── Watermark (handle late data) ──────────────────────
+wm_df = (kafka_df
+    .withWatermark("timestamp","10 minutes"))
+
+# ── Tumbling window aggregation ───────────────────────
+agg_df = (wm_df
+    .groupBy(
+        window(col("timestamp"),"5 minutes"),
+        col("event"))
+    .agg(count("*").alias("cnt")))
+
+# ── Sliding window ─────────────────────────────────────
+slide_df = (wm_df
+    .groupBy(
+        window(col("timestamp"),"10 minutes","5 minutes"))
+    .agg(sum("value").alias("total")))
+
+# ── Write sinks ───────────────────────────────────────
+# Console (debug only)
+q = (agg_df.writeStream
+    .format("console")
+    .outputMode("update")      # complete | append | update
+    .option("truncate","false")
+    .trigger(processingTime="5 seconds")
+    .start())
+
+# Delta sink (production)
+q = (agg_df.writeStream
+    .format("delta")
+    .outputMode("append")
+    .option("checkpointLocation","/ckpt/agg/")
+    .trigger(availableNow=True)   # one-shot batch mode
+    .table("default.stream_agg"))
+
+# Kafka sink
+q = (kafka_df.writeStream
+    .format("kafka")
+    .option("kafka.bootstrap.servers","broker:9092")
+    .option("topic","output-topic")
+    .option("checkpointLocation","/ckpt/kafka/")
+    .outputMode("append").start())
+
+# ── Query control ─────────────────────────────────────
+q.status                          # dict of query status
+q.lastProgress                    # metrics from last batch
+q.recentProgress                  # list of recent metrics
+q.awaitTermination(timeout=60)    # block until done
+q.stop()                          # graceful stop
+
+# Await all active streams
+spark.streams.awaitAnyTermination()</pre></div>
+  <div class="cell-sql"><div class="lang-tag sql-tag">Spark SQL</div><pre>-- Streaming transforms in DLT (Delta Live Tables)
+
+-- Bronze (raw ingest)
+CREATE OR REFRESH STREAMING TABLE bronze
+AS SELECT * FROM STREAM(cloud_source);
+
+-- Silver (cleaned)
+CREATE OR REFRESH STREAMING TABLE silver
+AS SELECT
+  id, event,
+  CAST(ts AS TIMESTAMP) AS event_ts,
+  _metadata.file_name   AS source_file
+FROM STREAM(LIVE.bronze)
+WHERE event IS NOT NULL;
+
+-- Gold (aggregation)
+CREATE OR REFRESH MATERIALIZED VIEW gold_hourly
+AS SELECT
+  DATE_TRUNC('HOUR', event_ts) AS hr,
+  event,
+  COUNT(*) AS cnt
+FROM LIVE.silver
+GROUP BY 1, 2;
+
+-- Apply quality constraints (DLT)
+CREATE OR REFRESH STREAMING TABLE silver_valid (
+  CONSTRAINT valid_id   EXPECT (id IS NOT NULL),
+  CONSTRAINT valid_event EXPECT (event != '') ON VIOLATION DROP ROW
+)
+AS SELECT * FROM STREAM(LIVE.bronze);
+
+-- Trigger modes (set in PySpark writeStream):
+-- trigger(processingTime='30 seconds') -- micro-batch
+-- trigger(once=True)                   -- one-shot
+-- trigger(availableNow=True)           -- optimized one-shot
+-- trigger(continuous='1 second')       -- continuous mode</pre></div>
+</div></div>
+<div class="page pg-break"><div class="page-title">⚡ PERFORMANCE TUNING</div><div class="section-hdr orange"><span>⚡</span>Cache & Persist</div><div class="dual">
+  <div class="cell-py"><div class="lang-tag py-tag">PySpark</div><pre>from pyspark import StorageLevel
+
+# Cache (default = MEMORY_AND_DISK)
+df.cache()              # lazy — triggered on first action
+df.persist()            # same as cache()
+
+# Specific storage levels
+df.persist(StorageLevel.MEMORY_ONLY)          # fastest, may spill
+df.persist(StorageLevel.MEMORY_AND_DISK)      # spill to disk
+df.persist(StorageLevel.MEMORY_ONLY_SER)      # serialized (less RAM)
+df.persist(StorageLevel.DISK_ONLY)            # no RAM
+df.persist(StorageLevel.MEMORY_AND_DISK_2)    # 2x replicated
+
+# Unpersist / free memory
+df.unpersist()
+
+# Check cached DataFrames in Spark UI
+# Navigate: Spark UI → Storage tab
+
+# When to cache?
+# - DataFrame used in multiple actions
+# - Iterative ML algorithms
+# - Interactive exploratory queries
+# - After expensive transformation (filter/join/agg)</pre></div>
+  <div class="cell-sql"><div class="lang-tag sql-tag">Spark SQL</div><pre>-- Cache a table / view (Databricks)
+CACHE TABLE my_view;
+CACHE LAZY TABLE my_view;   -- deferred until first query
+
+-- Uncache
+UNCACHE TABLE my_view;
+
+-- Check cache status
+-- View Spark UI → Storage tab
+-- Or:
+SELECT * FROM information_schema.tables
+WHERE table_name = 'my_view';
+
+-- Force caching by running a full scan
+SELECT COUNT(*) FROM my_view;  -- materializes cache</pre></div>
+</div><div class="section-hdr orange"><span>📡</span>Broadcast Join & Skew Handling</div><div class="dual">
+  <div class="cell-py"><div class="lang-tag py-tag">PySpark</div><pre>from pyspark.sql.functions import broadcast
+
+# Force small table broadcast (avoid shuffle)
+# Threshold: spark.sql.autoBroadcastJoinThreshold (10MB)
+df_big.join(broadcast(df_small), "key")
+
+# Disable auto broadcast for specific query
+spark.conf.set("spark.sql.autoBroadcastJoinThreshold","-1")
+
+# ── Skew handling — Salting technique ─────────────────
+import pyspark.sql.functions as F
+from pyspark.sql.functions import lit, rand, concat, floor
+
+SALT = 20   # number of salt buckets
+
+# Salt the skewed key (large side)
+skewed = df_big.withColumn(
+    "salt_key",
+    concat(col("key"), lit("_"),
+           (rand()*SALT).cast("int").cast("string")))
+
+# Explode the small side to match all salts
+small_exp = df_small.withColumn(
+    "salt_n", F.explode(sequence(lit(0), lit(SALT-1))))
+small_exp = small_exp.withColumn(
+    "salt_key",
+    concat(col("key"), lit("_"), col("salt_n").cast("string")))
+
+skewed.join(small_exp, "salt_key")
+
+# AQE skew join (automatic — no code needed)
+spark.conf.set("spark.sql.adaptive.enabled","true")
+spark.conf.set("spark.sql.adaptive.skewJoin.enabled","true")</pre></div>
+  <div class="cell-sql"><div class="lang-tag sql-tag">Spark SQL</div><pre>-- Broadcast hint in SQL
+SELECT /*+ BROADCAST(small) */
+  big.*, small.lookup_val
+FROM big_table big
+JOIN small_table small ON big.key = small.key;
+
+-- Merge join hint
+SELECT /*+ MERGE(a, b) */ *
+FROM a JOIN b ON a.id = b.id;
+
+-- Shuffle hash join
+SELECT /*+ SHUFFLE_HASH(a) */ *
+FROM a JOIN b ON a.id = b.id;
+
+-- Repartition hint (avoid small files)
+SELECT /*+ REPARTITION(10) */ * FROM big_table;
+
+-- Coalesce hint (reduce partitions, no shuffle)
+SELECT /*+ COALESCE(4) */ * FROM small_result;
+
+-- AQE settings (set before query)
+SET spark.sql.adaptive.enabled = true;
+SET spark.sql.adaptive.skewJoin.enabled = true;
+SET spark.sql.adaptive.coalescePartitions.enabled = true;</pre></div>
+</div><div class="section-hdr orange"><span>🔀</span>Repartition & Coalesce</div><div class="dual">
+  <div class="cell-py"><div class="lang-tag py-tag">PySpark</div><pre># ── Repartition (full shuffle, can increase OR decrease)
+df.repartition(200)                     # by count
+df.repartition(200, col("user_id"))     # by column (hash)
+df.repartition(200, "user_id","date")   # multi-column
+
+# Use repartition when:
+# - Increasing partitions
+# - Partitioning by column for downstream joins
+# - Fixing severe skew before groupBy
+
+# ── Coalesce (no shuffle, decrease only)
+df.coalesce(10)   # merge partitions locally
+
+# Use coalesce when:
+# - Reducing small-file count before write
+# - Saving final result to fewer files
+# - Don't need even distribution
+
+# ── Check partitions
+df.rdd.getNumPartitions()   # current count
+
+# ── Partition config
+spark.conf.set("spark.sql.shuffle.partitions","200")  # default
+# Rule of thumb: 2–3x number of cores
+# For large data: target ~128MB per partition</pre></div>
+  <div class="cell-sql"><div class="lang-tag sql-tag">Spark SQL</div><pre>-- Repartition via HINT
+SELECT /*+ REPARTITION(200, user_id) */ *
+FROM orders;
+
+-- Coalesce via HINT
+SELECT /*+ COALESCE(10) */ *
+FROM small_result;
+
+-- Optimal partition count for writes
+-- Use OPTIMIZE for Delta tables instead:
+OPTIMIZE my_table;    -- auto-compacts to ~1GB files
+OPTIMIZE my_table ZORDER BY (user_id, date);
+
+-- Set default shuffle partitions
+SET spark.sql.shuffle.partitions = 200;
+SET spark.sql.files.maxPartitionBytes = 134217728; -- 128MB
+
+-- AQE will auto-coalesce if enabled:
+SET spark.sql.adaptive.coalescePartitions.enabled = true;
+SET spark.sql.adaptive.advisoryPartitionSizeInBytes = 134217728;</pre></div>
+</div><div class="section-hdr orange"><span>🎛</span>Key Config Settings</div><div class="dual">
+  <div class="cell-py" style="grid-column:1/-1"><div class="lang-tag py-tag">PySpark</div><pre># ── Most Important spark.conf.set() Tuning Knobs ──────────────────────────────
+spark.conf.set("spark.sql.shuffle.partitions",         "200")   # default, tune to 2-3× cores
+spark.conf.set("spark.sql.autoBroadcastJoinThreshold", "10m")   # broadcast tables &lt; 10MB
+spark.conf.set("spark.sql.adaptive.enabled",           "true")  # AQE: auto-optimize at runtime
+spark.conf.set("spark.sql.adaptive.coalescePartitions.enabled",    "true")  # AQE: merge small partitions
+spark.conf.set("spark.sql.adaptive.skewJoin.enabled",             "true")  # AQE: handle skewed partitions
+spark.conf.set("spark.sql.adaptive.advisoryPartitionSizeInBytes", "134217728")  # target 128MB partitions
+spark.conf.set("spark.databricks.delta.optimizeWrite.enabled",    "true")  # Delta: auto-optimize writes
+spark.conf.set("spark.databricks.delta.autoCompact.enabled",      "true")  # Delta: auto-compact small files
+spark.conf.set("spark.sql.files.maxPartitionBytes",    "134217728")  # 128MB per partition (read)
+spark.conf.set("spark.sql.broadcastTimeout",           "600")    # 10 min for large broadcasts
+spark.conf.set("spark.memory.fraction",                "0.8")    # 80% heap for execution+storage
+spark.conf.set("spark.memory.storageFraction",         "0.5")    # 50% of above for storage
+spark.conf.set("spark.rdd.compress",                   "true")   # compress serialized RDDs
+spark.conf.set("spark.serializer","org.apache.spark.serializer.KryoSerializer") # faster than Java</pre></div>
+</div><div class="section-hdr orange"><span>🔬</span>Explain & Query Optimization</div><div class="dual">
+  <div class="cell-py"><div class="lang-tag py-tag">PySpark</div><pre># ── Reading the execution plan ─────────────────────────
+# Levels: simple | extended | codegen | cost | formatted
+df.explain("formatted")   # best for humans
+
+# Key things to look for in the plan:
+# ✅ FileScan with PushedFilters     → predicate pushdown working
+# ✅ ColumnarToRow                   → reading columnar format
+# ✅ BroadcastHashJoin               → efficient small-table join
+# ❌ SortMergeJoin                   → check if broadcast possible
+# ❌ Exchange (shuffle)              → expensive cross-node data move
+# ❌ HashAggregate without partial   → might be skewed
+
+# ── Force predicate pushdown ──────────────────────────
+# Filter BEFORE joins/aggregations
+df = spark.read.parquet("/data/").filter(col("year")==2024)
+#            ↑ pushed into the scan, reads fewer row groups
+
+# ── Column pruning ────────────────────────────────────
+# Only select needed columns when reading
+df = spark.read.parquet("/data/").select("id","amount","date")
+
+# ── Partition pruning ─────────────────────────────────
+# Partition column in filter avoids scanning all parts
+df = spark.read.parquet("/data/partitioned_by_year/")\
+         .filter(col("year")==2024)  # only reads year=2024/
+
+# ── Avoid wide transformations where possible ─────────
+# groupBy → sortBy → repartition all cause full shuffles
+# batch them wisely and cache before repeated use</pre></div>
+  <div class="cell-sql"><div class="lang-tag sql-tag">Spark SQL</div><pre>-- Explain plan
+EXPLAIN SELECT * FROM orders WHERE year = 2024;
+EXPLAIN FORMATTED SELECT * FROM orders WHERE year = 2024;
+EXPLAIN EXTENDED  SELECT * FROM orders;
+EXPLAIN COST      SELECT * FROM orders;
+
+-- Predicate pushdown (automatic with Parquet/Delta)
+SELECT id, amount FROM orders
+WHERE year = 2024 AND month = 1;   -- partition pruning
+-- Spark will only scan year=2024/month=1/ folder
+
+-- Column pruning (automatic)
+SELECT id, amount FROM wide_table;  -- only id,amount read
+
+-- Statistics for CBO (Cost-Based Optimizer)
+ANALYZE TABLE orders
+  COMPUTE STATISTICS FOR COLUMNS id, amount, date;
+
+-- Check table stats
+DESCRIBE EXTENDED orders;
+
+-- Force specific join strategy
+SELECT /*+ BROADCAST(small_dim) */
+  f.*, d.name
+FROM fact_table f
+JOIN small_dim d ON f.dim_id = d.id;
+
+-- Avoid SELECT * in production queries
+-- Always filter on partition columns early
+-- Use Delta ZORDER on frequently filtered columns
+OPTIMIZE orders ZORDER BY (user_id, order_date);</pre></div>
+</div></div>
+</body></html>
