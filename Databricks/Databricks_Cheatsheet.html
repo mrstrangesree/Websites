@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<title>Databricks Cheatsheet</title>
+<style>
+  /* ── Reset & Base ─────────────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: #0f0f1a;
+    color: #cdd6f4;
+    font-size: 11px;
+    line-height: 1.45;
+  }
+
+  /* ── Print settings ──────────────────────────────────────── */
+  @media print {
+    body { background: #fff; color: #111; font-size: 9px; }
+    .page { page-break-after: always; padding: 10mm; }
+    .cover { page-break-after: always; }
+    pre, code { background: #1e1e2e !important; color: #cdd6f4 !important; }
+    .section-header { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .cover-inner { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .card { border: 1px solid #ddd; break-inside: avoid; }
+    @page { margin: 10mm; size: A4; }
+  }
+
+  /* ── Layout ──────────────────────────────────────────────── */
+  .cover {
+    display: flex; align-items: center; justify-content: center;
+    min-height: 100vh; padding: 40px;
+  }
+  .cover-inner {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    border-radius: 16px; padding: 60px 80px; text-align: center;
+    border: 2px solid #1e88e5; max-width: 700px; width: 100%;
+  }
+  .cover h1 { font-size: 52px; color: #fff; letter-spacing: 6px; margin-bottom: 6px; }
+  .cover h2 { font-size: 24px; color: #1e88e5; letter-spacing: 3px; margin-bottom: 20px; }
+  .cover p  { font-size: 13px; color: #a9b1d6; line-height: 1.7; }
+  .cover .badge {
+    display: inline-block; background: #1e88e5; color: #fff;
+    padding: 4px 14px; border-radius: 20px; margin: 4px; font-size: 11px; font-weight: 600;
+  }
+  .cover-badges { margin-top: 24px; }
+
+  .page {
+    max-width: 900px; margin: 0 auto; padding: 30px 20px;
+  }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+  .full { grid-column: 1 / -1; }
+
+  /* ── Cards ───────────────────────────────────────────────── */
+  .card {
+    background: #1e1e2e; border-radius: 8px; overflow: hidden;
+    border: 1px solid #313244;
+  }
+  .section-header {
+    padding: 7px 12px; font-size: 11.5px; font-weight: 700;
+    letter-spacing: 0.5px; color: #fff; display: flex; align-items: center; gap: 6px;
+  }
+  .section-header span { font-size: 14px; }
+  .card-body { padding: 10px 12px; }
+
+  /* ── Color Themes ────────────────────────────────────────── */
+  .blue   { background: #1e88e5; }
+  .green  { background: #43a047; }
+  .red    { background: #e53935; }
+  .orange { background: #fb8c00; }
+  .purple { background: #8e24aa; }
+  .teal   { background: #00acc1; }
+
+  /* ── Code ────────────────────────────────────────────────── */
+  pre {
+    background: #11111b; border-radius: 6px; padding: 8px 10px;
+    font-family: 'Cascadia Code', 'Fira Code', Consolas, monospace;
+    font-size: 9.5px; line-height: 1.55; overflow-x: auto; color: #cdd6f4;
+    border-left: 3px solid #313244; margin-top: 6px;
+  }
+  pre + pre { margin-top: 4px; }
+  .comment { color: #6c7086; font-style: italic; }
+  .kw      { color: #cba6f7; }   /* keyword  */
+  .fn      { color: #89b4fa; }   /* function */
+  .str     { color: #a6e3a1; }   /* string   */
+  .num     { color: #fab387; }   /* number   */
+  .op      { color: #89dceb; }   /* operator */
+
+  /* ── Section label ───────────────────────────────────────── */
+  .page-title {
+    font-size: 22px; font-weight: 800; color: #cdd6f4;
+    margin-bottom: 18px; border-bottom: 2px solid #313244; padding-bottom: 8px;
+    letter-spacing: 1px;
+  }
+
+  /* ── Tip boxes ───────────────────────────────────────────── */
+  .tip {
+    background: #1e2a1e; border-left: 3px solid #43a047;
+    padding: 5px 10px; border-radius: 4px; font-size: 9.5px;
+    color: #a6e3a1; margin-top: 6px;
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════ COVER PAGE ═══════════════════════════ -->
+<div class="cover">
+  <div class="cover-inner">
+    <h1>DATABRICKS CHEATSHEET</h1>
+    <h2></h2>
+    <p>A comprehensive quick-reference for engineers working with Apache Spark,<br>
+       Delta Lake, MLflow, Unity Catalog, and Structured Streaming on Databricks.</p>
+    <div class="cover-badges">
+      <span class="badge">PySpark 3.x</span>
+      <span class="badge">Delta Lake 3.x</span>
+      <span class="badge">MLflow 2.x</span>
+      <span class="badge">Unity Catalog</span>
+      <span class="badge">Structured Streaming</span>
+      <span class="badge">DBFS & Secrets</span>
+      <span class="badge">Window Functions</span>
+      <span class="badge">Widgets</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════ PAGE 1 ═══════════════════════════════ -->
+<div class="page">
+  <div class="page-title">📓 Notebooks &amp; Magic Commands · 📁 DBFS</div>
+  <div class="grid">
+
+    <!-- Magic Commands -->
+    <div class="card full">
+      <div class="section-header blue"><span>✦</span> Magic Commands &amp; Notebook Basics</div>
+      <div class="card-body">
+<pre><span class="comment"># Run another notebook from current notebook</span>
+<span class="op">%run</span> <span class="str">"./path/to/OtherNotebook"</span>
+
+<span class="comment"># Display rich output (DataFrame, plot, image, HTML)</span>
+<span class="fn">display</span>(df)
+
+<span class="comment"># Print schema of a DataFrame</span>
+df.<span class="fn">printSchema</span>()
+
+<span class="comment"># Shell command inside notebook</span>
+<span class="op">%sh</span> ls /dbfs/mnt/
+
+<span class="comment"># Run SQL directly in a Python notebook cell</span>
+<span class="op">%sql</span> SELECT * FROM my_table LIMIT 10
+
+<span class="comment"># Switch language for a single cell only</span>
+<span class="op">%python</span>  |  <span class="op">%scala</span>  |  <span class="op">%r</span>  |  <span class="op">%sql</span>
+
+<span class="comment"># Install a PyPI library in the current notebook session</span>
+<span class="op">%pip install</span> pandas==2.0.3
+
+<span class="comment"># Show file system contents via DBFS magic</span>
+<span class="op">%fs</span> ls /mnt/datalake/</pre>
+      </div>
+    </div>
+
+    <!-- DBFS -->
+    <div class="card full">
+      <div class="section-header teal"><span>✦</span> DBFS – Databricks File System (dbutils.fs)</div>
+      <div class="card-body">
+<pre><span class="comment"># List files in a DBFS path</span>
+dbutils.fs.<span class="fn">ls</span>(<span class="str">'/mnt/datalake/raw/'</span>)
+
+<span class="comment"># Copy file within DBFS</span>
+dbutils.fs.<span class="fn">cp</span>(<span class="str">'/mnt/src/file.csv'</span>, <span class="str">'/mnt/dst/file.csv'</span>)
+
+<span class="comment"># Move / rename a file</span>
+dbutils.fs.<span class="fn">mv</span>(<span class="str">'/mnt/old/path.csv'</span>, <span class="str">'/mnt/new/path.csv'</span>)
+
+<span class="comment"># Delete a file or directory (recurse=True for folders)</span>
+dbutils.fs.<span class="fn">rm</span>(<span class="str">'/mnt/tmp/'</span>, recurse=<span class="kw">True</span>)
+
+<span class="comment"># Write a small text file to DBFS</span>
+dbutils.fs.<span class="fn">put</span>(<span class="str">"/mnt/test/hello.txt"</span>, <span class="str">"Hello Databricks!"</span>, overwrite=<span class="kw">True</span>)
+
+<span class="comment"># Read first bytes of a DBFS file</span>
+content = dbutils.fs.<span class="fn">head</span>(<span class="str">"/mnt/test/hello.txt"</span>)
+
+<span class="comment"># Mount ADLS Gen2 container using service principal (OAuth)</span>
+dbutils.fs.<span class="fn">mount</span>(
+  source      = <span class="str">"abfss://container@account.dfs.core.windows.net/"</span>,
+  mount_point = <span class="str">"/mnt/datalake"</span>,
+  extra_configs = {
+    <span class="str">"fs.azure.account.auth.type"</span>: <span class="str">"OAuth"</span>,
+    <span class="str">"fs.azure.account.oauth.provider.type"</span>:
+      <span class="str">"org.apache.hadoop.fs.azurebfs.oauth2.ClientCredsTokenProvider"</span>,
+    <span class="str">"fs.azure.account.oauth2.client.id"</span>:
+      dbutils.secrets.<span class="fn">get</span>(<span class="str">"scope"</span>, <span class="str">"client-id"</span>),
+    <span class="str">"fs.azure.account.oauth2.client.secret"</span>:
+      dbutils.secrets.<span class="fn">get</span>(<span class="str">"scope"</span>, <span class="str">"secret"</span>),
+    <span class="str">"fs.azure.account.oauth2.client.endpoint"</span>:
+      <span class="str">"https://login.microsoftonline.com/&lt;tenant-id&gt;/oauth2/token"</span>
+  }
+)</pre>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════ PAGE 2 ═══════════════════════════════ -->
+<div class="page">
+  <div class="page-title">⚡ PySpark – DataFrame Essentials</div>
+  <div class="grid">
+
+    <div class="card">
+      <div class="section-header green"><span>✦</span> Reading Data</div>
+      <div class="card-body">
+<pre><span class="comment"># CSV with header + inferred schema</span>
+df = spark.read\
+  .<span class="fn">option</span>(<span class="str">"header"</span>, <span class="kw">True</span>)\
+  .<span class="fn">option</span>(<span class="str">"inferSchema"</span>, <span class="kw">True</span>)\
+  .<span class="fn">csv</span>(<span class="str">"/mnt/data/sales.csv"</span>)
+
+<span class="comment"># Parquet (preferred columnar format)</span>
+df = spark.read.<span class="fn">parquet</span>(<span class="str">"/mnt/data/sales.parquet"</span>)
+
+<span class="comment"># JSON (auto-detects nested structure)</span>
+df = spark.read.<span class="fn">json</span>(<span class="str">"/mnt/data/events.json"</span>)
+
+<span class="comment"># Delta table from path</span>
+df = spark.read.<span class="fn">format</span>(<span class="str">"delta"</span>)\
+               .<span class="fn">load</span>(<span class="str">"/mnt/delta/sales"</span>)
+
+<span class="comment"># Read a Hive/metastore table</span>
+df = spark.table(<span class="str">"analytics.sales"</span>)</pre>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-header green"><span>✦</span> Transformations</div>
+      <div class="card-body">
+<pre><span class="comment"># Select specific columns</span>
+df.<span class="fn">select</span>(<span class="str">"order_id"</span>, <span class="str">"amount"</span>, <span class="str">"region"</span>).<span class="fn">show</span>()
+
+<span class="comment"># Filter rows (WHERE equivalent)</span>
+df.<span class="fn">filter</span>((df.amount &gt; <span class="num">1000</span>) &amp; (df.region == <span class="str">"US"</span>))
+
+<span class="comment"># Add / transform a column</span>
+<span class="kw">from</span> pyspark.sql.functions <span class="kw">import</span> col, upper, round
+df = df\
+  .<span class="fn">withColumn</span>(<span class="str">"amt_rounded"</span>, <span class="fn">round</span>(<span class="fn">col</span>(<span class="str">"amount"</span>), <span class="num">2</span>))\
+  .<span class="fn">withColumn</span>(<span class="str">"region_upper"</span>, <span class="fn">upper</span>(<span class="fn">col</span>(<span class="str">"region"</span>)))
+
+<span class="comment"># Rename column</span>
+df = df.<span class="fn">withColumnRenamed</span>(<span class="str">"old_name"</span>, <span class="str">"new_name"</span>)
+
+<span class="comment"># Drop column</span>
+df = df.<span class="fn">drop</span>(<span class="str">"unnecessary_col"</span>)
+
+<span class="comment"># Drop duplicate rows</span>
+df = df.<span class="fn">dropDuplicates</span>([<span class="str">"order_id"</span>])
+
+<span class="comment"># Handle nulls</span>
+df = df.<span class="fn">fillna</span>({<span class="str">"amount"</span>: <span class="num">0</span>, <span class="str">"region"</span>: <span class="str">"Unknown"</span>})
+df = df.<span class="fn">dropna</span>(subset=[<span class="str">"order_id"</span>])</pre>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-header green"><span>✦</span> Aggregation &amp; Joins</div>
+      <div class="card-body">
+<pre><span class="comment"># Group By + multi-aggregate</span>
+<span class="kw">from</span> pyspark.sql.functions <span class="kw">import</span> sum, avg, count
+df.<span class="fn">groupBy</span>(<span class="str">"region"</span>).<span class="fn">agg</span>(
+    <span class="fn">sum</span>(<span class="str">"amount"</span>).<span class="fn">alias</span>(<span class="str">"total_sales"</span>),
+    <span class="fn">avg</span>(<span class="str">"amount"</span>).<span class="fn">alias</span>(<span class="str">"avg_sales"</span>),
+    <span class="fn">count</span>(<span class="str">"*"</span>).<span class="fn">alias</span>(<span class="str">"num_orders"</span>)
+).<span class="fn">show</span>()
+
+<span class="comment"># Sort descending</span>
+df.<span class="fn">orderBy</span>(<span class="fn">col</span>(<span class="str">"amount"</span>).<span class="fn">desc</span>()).<span class="fn">show</span>(<span class="num">10</span>)
+
+<span class="comment"># Joins (inner / left / right / outer / semi / anti)</span>
+result = df.<span class="fn">join</span>(df2, on=<span class="str">"customer_id"</span>, how=<span class="str">"inner"</span>)
+
+<span class="comment"># Broadcast small table for faster join</span>
+<span class="kw">from</span> pyspark.sql.functions <span class="kw">import</span> broadcast
+result = large.<span class="fn">join</span>(<span class="fn">broadcast</span>(small), <span class="str">"product_id"</span>)</pre>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-header green"><span>✦</span> Writing Data</div>
+      <div class="card-body">
+<pre><span class="comment"># Write Parquet (overwrite mode)</span>
+df.write.<span class="fn">mode</span>(<span class="str">"overwrite"</span>)\
+        .<span class="fn">parquet</span>(<span class="str">"/mnt/output/sales_clean/"</span>)
+
+<span class="comment"># Write partitioned output (creates sub-folders)</span>
+df.write.<span class="fn">mode</span>(<span class="str">"overwrite"</span>)\
+        .<span class="fn">partitionBy</span>(<span class="str">"region"</span>)\
+        .<span class="fn">parquet</span>(<span class="str">"/mnt/output/by_region/"</span>)
+
+<span class="comment"># Append to existing table</span>
+df.write.<span class="fn">mode</span>(<span class="str">"append"</span>)\
+        .<span class="fn">saveAsTable</span>(<span class="str">"analytics.sales"</span>)
+
+<span class="comment"># Repartition before write (avoids small files)</span>
+df.<span class="fn">repartition</span>(<span class="num">200</span>).write.<span class="fn">mode</span>(<span class="str">"overwrite"</span>)\
+    .<span class="fn">parquet</span>(<span class="str">"/mnt/output/"</span>)
+
+<span class="comment"># Coalesce to reduce file count</span>
+df.<span class="fn">coalesce</span>(<span class="num">8</span>).write.<span class="fn">mode</span>(<span class="str">"overwrite"</span>)\
+    .<span class="fn">parquet</span>(<span class="str">"/mnt/output/"</span>)
+
+<span class="comment"># Cache DataFrame for repeated use</span>
+df.<span class="fn">cache</span>()        <span class="comment"># or df.persist()</span>
+<span class="fn">print</span>(df.<span class="fn">count</span>()) <span class="comment"># triggers caching</span></pre>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════ PAGE 3 ═══════════════════════════════ -->
+<div class="page">
+  <div class="page-title">🗄️ Spark SQL · 🔺 Delta Lake</div>
+  <div class="grid">
+
+    <div class="card">
+      <div class="section-header orange"><span>✦</span> Spark SQL</div>
+      <div class="card-body">
+<pre><span class="comment"># Register DataFrame as a temporary SQL view</span>
+df.<span class="fn">createOrReplaceTempView</span>(<span class="str">"sales_vw"</span>)
+
+<span class="comment"># Run SQL on the temp view</span>
+result = spark.<span class="fn">sql</span>(<span class="str">"""
+    SELECT region, SUM(amount) AS total
+    FROM   sales_vw
+    WHERE  year = 2024
+    GROUP  BY region
+    ORDER  BY total DESC
+"""</span>)
+result.<span class="fn">show</span>()
+
+<span class="comment"># Global temp view (accessible across sessions)</span>
+df.<span class="fn">createOrReplaceGlobalTempView</span>(<span class="str">"global_sales"</span>)
+spark.<span class="fn">sql</span>(<span class="str">"SELECT * FROM global_temp.global_sales"</span>)
+
+<span class="comment"># Create DB, switch context</span>
+spark.<span class="fn">sql</span>(<span class="str">"CREATE DATABASE IF NOT EXISTS analytics"</span>)
+spark.<span class="fn">sql</span>(<span class="str">"USE analytics"</span>)
+
+<span class="comment"># Show all tables in current DB</span>
+spark.<span class="fn">sql</span>(<span class="str">"SHOW TABLES"</span>).<span class="fn">show</span>()
+
+<span class="comment"># Describe a Delta table (metadata)</span>
+spark.<span class="fn">sql</span>(<span class="str">"DESCRIBE DETAIL sales_delta"</span>).<span class="fn">show</span>(truncate=<span class="kw">False</span>)</pre>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-header red"><span>✦</span> Delta Lake – Read / Write</div>
+      <div class="card-body">
+<pre><span class="comment"># Write as Delta table (path-based)</span>
+df.write.<span class="fn">format</span>(<span class="str">"delta"</span>)\
+        .<span class="fn">mode</span>(<span class="str">"overwrite"</span>)\
+        .<span class="fn">save</span>(<span class="str">"/mnt/delta/sales"</span>)
+
+<span class="comment"># Write as managed table in metastore</span>
+df.write.<span class="fn">format</span>(<span class="str">"delta"</span>)\
+        .<span class="fn">mode</span>(<span class="str">"overwrite"</span>)\
+        .<span class="fn">saveAsTable</span>(<span class="str">"analytics.sales"</span>)
+
+<span class="comment"># Read Delta table</span>
+df = spark.read.<span class="fn">format</span>(<span class="str">"delta"</span>)\
+               .<span class="fn">load</span>(<span class="str">"/mnt/delta/sales"</span>)
+
+<span class="comment"># Schema evolution: add new columns automatically</span>
+df.write.<span class="fn">format</span>(<span class="str">"delta"</span>)\
+        .<span class="fn">mode</span>(<span class="str">"append"</span>)\
+        .<span class="fn">option</span>(<span class="str">"mergeSchema"</span>, <span class="str">"true"</span>)\
+        .<span class="fn">save</span>(<span class="str">"/mnt/delta/sales"</span>)</pre>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-header red"><span>✦</span> Delta Lake – MERGE (Upsert)</div>
+      <div class="card-body">
+<pre><span class="comment"># UPSERT with MERGE (SCD Type 1 pattern)</span>
+<span class="kw">from</span> delta.tables <span class="kw">import</span> DeltaTable
+
+target = DeltaTable.<span class="fn">forPath</span>(spark, <span class="str">"/mnt/delta/sales"</span>)
+
+target.<span class="fn">alias</span>(<span class="str">"t"</span>).<span class="fn">merge</span>(
+    df.<span class="fn">alias</span>(<span class="str">"s"</span>),
+    <span class="str">"t.order_id = s.order_id"</span>   <span class="comment"># join key</span>
+).<span class="fn">whenMatchedUpdateAll</span>()     <span class="comment"># update if match</span>\
+ .<span class="fn">whenNotMatchedInsertAll</span>()  <span class="comment"># insert if new</span>\
+ .<span class="fn">execute</span>()
+
+<span class="comment"># Conditional update on match</span>
+target.<span class="fn">alias</span>(<span class="str">"t"</span>).<span class="fn">merge</span>(df.<span class="fn">alias</span>(<span class="str">"s"</span>), <span class="str">"t.id = s.id"</span>)\
+  .<span class="fn">whenMatchedUpdate</span>(
+    condition = <span class="str">"s.updated_at > t.updated_at"</span>,
+    set = {<span class="str">"amount"</span>: <span class="str">"s.amount"</span>}
+  ).<span class="fn">whenNotMatchedInsertAll</span>().<span class="fn">execute</span>()</pre>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-header red"><span>✦</span> Delta Lake – Time Travel &amp; Maintenance</div>
+      <div class="card-body">
+<pre><span class="comment"># Read a specific historical version</span>
+df_v3 = spark.read.<span class="fn">format</span>(<span class="str">"delta"</span>)\
+             .<span class="fn">option</span>(<span class="str">"versionAsOf"</span>, <span class="num">3</span>)\
+             .<span class="fn">load</span>(<span class="str">"/mnt/delta/sales"</span>)
+
+<span class="comment"># Read by timestamp</span>
+df_ts = spark.read.<span class="fn">format</span>(<span class="str">"delta"</span>)\
+             .<span class="fn">option</span>(<span class="str">"timestampAsOf"</span>, <span class="str">"2024-06-01"</span>)\
+             .<span class="fn">load</span>(<span class="str">"/mnt/delta/sales"</span>)
+
+<span class="comment"># Show full change history (audit log)</span>
+spark.<span class="fn">sql</span>(<span class="str">"DESCRIBE HISTORY delta.`/mnt/delta/sales`"</span>).<span class="fn">show</span>()
+
+<span class="comment"># Restore table to version 5</span>
+spark.<span class="fn">sql</span>(<span class="str">"RESTORE TABLE analytics.sales TO VERSION AS OF 5"</span>)
+
+<span class="comment"># Compact small files + co-locate related data</span>
+spark.<span class="fn">sql</span>(<span class="str">"OPTIMIZE analytics.sales ZORDER BY (region, year)"</span>)
+
+<span class="comment"># Remove old data files (default: 7-day retention = 168h)</span>
+spark.<span class="fn">sql</span>(<span class="str">"VACUUM analytics.sales RETAIN 168 HOURS"</span>)</pre>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════ PAGE 4 ═══════════════════════════════ -->
+<div class="page">
+  <div class="page-title">🌊 Structured Streaming · 🏗️ Schema &amp; Types</div>
+  <div class="grid">
+
+    <div class="card full">
+      <div class="section-header purple"><span>✦</span> Structured Streaming</div>
+      <div class="card-body">
+<pre><span class="comment"># Read stream from Kafka topic</span>
+stream_df = (spark.readStream
+  .<span class="fn">format</span>(<span class="str">"kafka"</span>)
+  .<span class="fn">option</span>(<span class="str">"kafka.bootstrap.servers"</span>, <span class="str">"broker:9092"</span>)
+  .<span class="fn">option</span>(<span class="str">"subscribe"</span>, <span class="str">"orders-topic"</span>)
+  .<span class="fn">option</span>(<span class="str">"startingOffsets"</span>, <span class="str">"latest"</span>)
+  .<span class="fn">load</span>())
+
+<span class="comment"># Parse JSON payload from Kafka value bytes</span>
+<span class="kw">from</span> pyspark.sql.functions <span class="kw">import</span> from_json, col
+<span class="kw">from</span> pyspark.sql.types <span class="kw">import</span> StructType, StringType, DoubleType
+schema = StructType().<span class="fn">add</span>(<span class="str">"order_id"</span>, StringType()).<span class="fn">add</span>(<span class="str">"amount"</span>, DoubleType())
+
+parsed = stream_df\
+  .<span class="fn">selectExpr</span>(<span class="str">"CAST(value AS STRING) as json_str"</span>)\
+  .<span class="fn">select</span>(<span class="fn">from_json</span>(<span class="fn">col</span>(<span class="str">"json_str"</span>), schema).<span class="fn">alias</span>(<span class="str">"data"</span>))\
+  .<span class="fn">select</span>(<span class="str">"data.*"</span>)
+
+<span class="comment"># 5-minute tumbling window aggregation</span>
+<span class="kw">from</span> pyspark.sql.functions <span class="kw">import</span> window
+agg = parsed.<span class="fn">groupBy</span>(<span class="fn">window</span>(<span class="str">"event_time"</span>, <span class="str">"5 minutes"</span>), <span class="str">"region"</span>)\
+             .<span class="fn">sum</span>(<span class="str">"amount"</span>)
+
+<span class="comment"># Write stream to Delta table</span>
+query = (parsed.writeStream
+  .<span class="fn">format</span>(<span class="str">"delta"</span>)
+  .<span class="fn">outputMode</span>(<span class="str">"append"</span>)
+  .<span class="fn">option</span>(<span class="str">"checkpointLocation"</span>, <span class="str">"/mnt/checkpoints/orders"</span>)
+  .<span class="fn">toTable</span>(<span class="str">"analytics.orders_stream"</span>))
+
+<span class="comment"># Write stream to console (debug only)</span>
+query = parsed.writeStream.<span class="fn">format</span>(<span class="str">"console"</span>).<span class="fn">start</span>()
+
+<span class="comment"># Stop stream gracefully</span>
+query.<span class="fn">stop</span>()         <span class="comment"># or query.awaitTermination() to block</span></pre>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-header blue"><span>✦</span> Schema Definition</div>
+      <div class="card-body">
+<pre><span class="comment"># Define schema manually (avoids costly inferSchema)</span>
+<span class="kw">from</span> pyspark.sql.types <span class="kw">import</span> (
+    StructType, StructField,
+    StringType, IntegerType,
+    DoubleType, DateType, BooleanType
+)
+
+schema = StructType([
+  StructField(<span class="str">"order_id"</span>,    StringType(),  nullable=<span class="kw">False</span>),
+  StructField(<span class="str">"customer_id"</span>, IntegerType(), nullable=<span class="kw">True</span>),
+  StructField(<span class="str">"amount"</span>,      DoubleType(),  nullable=<span class="kw">True</span>),
+  StructField(<span class="str">"order_date"</span>,  DateType(),    nullable=<span class="kw">True</span>),
+  StructField(<span class="str">"is_paid"</span>,     BooleanType(), nullable=<span class="kw">True</span>),
+])
+
+df = spark.read.<span class="fn">schema</span>(schema)\
+               .<span class="fn">csv</span>(<span class="str">"/mnt/data/orders.csv"</span>, header=<span class="kw">True</span>)</pre>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-header blue"><span>✦</span> Type Casting &amp; Date Functions</div>
+      <div class="card-body">
+<pre><span class="comment"># Cast columns to correct types</span>
+<span class="kw">from</span> pyspark.sql.functions <span class="kw">import</span> col, to_date
+df = df\
+  .<span class="fn">withColumn</span>(<span class="str">"amount"</span>, <span class="fn">col</span>(<span class="str">"amount"</span>).<span class="fn">cast</span>(<span class="str">"double"</span>))\
+  .<span class="fn">withColumn</span>(<span class="str">"order_date"</span>,
+    <span class="fn">to_date</span>(<span class="fn">col</span>(<span class="str">"order_date"</span>), <span class="str">"yyyy-MM-dd"</span>))
+
+<span class="comment"># Common date functions</span>
+<span class="kw">from</span> pyspark.sql.functions <span class="kw">import</span> (
+    year, month, dayofmonth, datediff, current_date
+)
+df = df\
+  .<span class="fn">withColumn</span>(<span class="str">"yr"</span>,       <span class="fn">year</span>(<span class="str">"order_date"</span>))\
+  .<span class="fn">withColumn</span>(<span class="str">"mon"</span>,      <span class="fn">month</span>(<span class="str">"order_date"</span>))\
+  .<span class="fn">withColumn</span>(<span class="str">"day"</span>,      <span class="fn">dayofmonth</span>(<span class="str">"order_date"</span>))\
+  .<span class="fn">withColumn</span>(<span class="str">"days_old"</span>,
+    <span class="fn">datediff</span>(<span class="fn">current_date</span>(), <span class="fn">col</span>(<span class="str">"order_date"</span>)))</pre>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════ PAGE 5 ═══════════════════════════════ -->
+<div class="page">
+  <div class="page-title">🪟 Window Functions · 🤖 MLflow</div>
+  <div class="grid">
+
+    <div class="card">
+      <div class="section-header green"><span>✦</span> Window Functions</div>
+      <div class="card-body">
+<pre><span class="comment"># Define a window: partition by region, order by date</span>
+<span class="kw">from</span> pyspark.sql.window <span class="kw">import</span> Window
+<span class="kw">from</span> pyspark.sql.functions <span class="kw">import</span> (
+    row_number, rank, dense_rank,
+    lag, lead, sum <span class="kw">as</span> wsum
+)
+
+w = Window.<span class="fn">partitionBy</span>(<span class="str">"region"</span>)\
+           .<span class="fn">orderBy</span>(<span class="str">"order_date"</span>)
+
+<span class="comment"># Row number (unique sequential rank)</span>
+df = df.<span class="fn">withColumn</span>(<span class="str">"row_num"</span>, <span class="fn">row_number</span>().<span class="fn">over</span>(w))
+
+<span class="comment"># Rank (ties share same rank, next skipped)</span>
+df = df.<span class="fn">withColumn</span>(<span class="str">"rnk"</span>, <span class="fn">rank</span>().<span class="fn">over</span>(w))
+
+<span class="comment"># Dense rank (ties share same rank, no skip)</span>
+df = df.<span class="fn">withColumn</span>(<span class="str">"dense_rnk"</span>, <span class="fn">dense_rank</span>().<span class="fn">over</span>(w))
+
+<span class="comment"># Running total (cumulative sum)</span>
+w_cum = Window.<span class="fn">partitionBy</span>(<span class="str">"region"</span>)\
+              .<span class="fn">orderBy</span>(<span class="str">"order_date"</span>)\
+              .<span class="fn">rowsBetween</span>(Window.unboundedPreceding,
+                           Window.currentRow)
+df = df.<span class="fn">withColumn</span>(<span class="str">"running_total"</span>,
+    <span class="fn">wsum</span>(<span class="str">"amount"</span>).<span class="fn">over</span>(w_cum))
+
+<span class="comment"># Lag (previous row value) / Lead (next row value)</span>
+df = df.<span class="fn">withColumn</span>(<span class="str">"prev_amt"</span>, <span class="fn">lag</span>(<span class="str">"amount"</span>, <span class="num">1</span>).<span class="fn">over</span>(w))
+df = df.<span class="fn">withColumn</span>(<span class="str">"next_amt"</span>, <span class="fn">lead</span>(<span class="str">"amount"</span>, <span class="num">1</span>).<span class="fn">over</span>(w))</pre>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-header green"><span>✦</span> MLflow – Experiment Tracking</div>
+      <div class="card-body">
+<pre><span class="comment"># Set experiment and start a run</span>
+<span class="kw">import</span> mlflow, mlflow.sklearn
+mlflow.<span class="fn">set_experiment</span>(<span class="str">"/Users/me/sales-forecast"</span>)
+
+<span class="kw">with</span> mlflow.<span class="fn">start_run</span>(run_name=<span class="str">"xgb_v1"</span>) <span class="kw">as</span> run:
+    <span class="comment"># Log hyperparameters</span>
+    mlflow.<span class="fn">log_param</span>(<span class="str">"n_estimators"</span>, <span class="num">200</span>)
+    mlflow.<span class="fn">log_param</span>(<span class="str">"max_depth"</span>, <span class="num">6</span>)
+
+    model.<span class="fn">fit</span>(X_train, y_train)
+    preds = model.<span class="fn">predict</span>(X_test)
+
+    <span class="comment"># Log evaluation metrics</span>
+    mlflow.<span class="fn">log_metric</span>(<span class="str">"rmse"</span>, rmse)
+    mlflow.<span class="fn">log_metric</span>(<span class="str">"r2"</span>,   r2)
+
+    <span class="comment"># Save model artifact</span>
+    mlflow.sklearn.<span class="fn">log_model</span>(model, <span class="str">"model"</span>)
+
+<span class="comment"># Auto-log everything (params, metrics, model)</span>
+mlflow.sklearn.<span class="fn">autolog</span>()  <span class="comment"># also: mlflow.xgboost.autolog()</span>
+
+<span class="comment"># Register model in Model Registry</span>
+mlflow.<span class="fn">register_model</span>(
+    <span class="fn">f</span><span class="str">"runs:/{run.info.run_id}/model"</span>,
+    <span class="str">"SalesForecastModel"</span>
+)
+
+<span class="comment"># Load Production model for inference</span>
+prod = mlflow.pyfunc.<span class="fn">load_model</span>(
+    <span class="str">"models:/SalesForecastModel/Production"</span>
+)
+preds = prod.<span class="fn">predict</span>(X_test)</pre>
+      </div>
+    </div>
+
+    <div class="card full">
+      <div class="section-header purple"><span>✦</span> Unity Catalog – 3-Level Namespace (catalog.schema.table)</div>
+      <div class="card-body">
+<pre><span class="comment"># Create catalog and schema</span>
+spark.<span class="fn">sql</span>(<span class="str">"CREATE CATALOG IF NOT EXISTS prod"</span>)
+spark.<span class="fn">sql</span>(<span class="str">"CREATE SCHEMA  IF NOT EXISTS prod.sales"</span>)
+
+<span class="comment"># Create a managed Delta table in Unity Catalog</span>
+spark.<span class="fn">sql</span>(<span class="str">"""
+    CREATE TABLE IF NOT EXISTS prod.sales.orders (
+        order_id   STRING  NOT NULL,
+        amount     DOUBLE,
+        region     STRING,
+        order_date DATE
+    ) USING DELTA
+"""</span>)
+
+<span class="comment"># Grant SELECT to a group</span>
+spark.<span class="fn">sql</span>(<span class="str">"GRANT SELECT ON TABLE prod.sales.orders TO `data-analysts`"</span>)
+
+<span class="comment"># Grant all privileges on schema</span>
+spark.<span class="fn">sql</span>(<span class="str">"GRANT ALL PRIVILEGES ON SCHEMA prod.sales TO `data-engineers`"</span>)
+
+<span class="comment"># Show who has access</span>
+spark.<span class="fn">sql</span>(<span class="str">"SHOW GRANTS ON TABLE prod.sales.orders"</span>).<span class="fn">show</span>()
+
+<span class="comment"># Write DataFrame directly to Unity Catalog table</span>
+df.write.<span class="fn">mode</span>(<span class="str">"overwrite"</span>).<span class="fn">saveAsTable</span>(<span class="str">"prod.sales.orders"</span>)</pre>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════ PAGE 6 ═══════════════════════════════ -->
+<div class="page">
+  <div class="page-title">🔧 Widgets · 🔐 Secrets · 🔁 Workflows</div>
+  <div class="grid">
+
+    <div class="card">
+      <div class="section-header teal"><span>✦</span> Widgets &amp; Parameters</div>
+      <div class="card-body">
+<pre><span class="comment"># Text widget (free-form user input)</span>
+dbutils.widgets.<span class="fn">text</span>(<span class="str">"env"</span>, <span class="str">"dev"</span>, <span class="str">"Environment"</span>)
+env = dbutils.widgets.<span class="fn">get</span>(<span class="str">"env"</span>)  <span class="comment"># retrieve value</span>
+
+<span class="comment"># Dropdown widget (fixed choices)</span>
+dbutils.widgets.<span class="fn">dropdown</span>(
+    <span class="str">"region"</span>, <span class="str">"US"</span>,
+    [<span class="str">"US"</span>, <span class="str">"EU"</span>, <span class="str">"APAC"</span>],
+    <span class="str">"Select Region"</span>
+)
+region = dbutils.widgets.<span class="fn">get</span>(<span class="str">"region"</span>)
+
+<span class="comment"># Combobox (dropdown + free-text entry)</span>
+dbutils.widgets.<span class="fn">combobox</span>(
+    <span class="str">"table"</span>, <span class="str">"sales"</span>,
+    [<span class="str">"sales"</span>, <span class="str">"orders"</span>, <span class="str">"customers"</span>],
+    <span class="str">"Table Name"</span>
+)
+
+<span class="comment"># Multiselect widget</span>
+dbutils.widgets.<span class="fn">multiselect</span>(
+    <span class="str">"cols"</span>, <span class="str">"id"</span>,
+    [<span class="str">"id"</span>, <span class="str">"name"</span>, <span class="str">"amount"</span>],
+    <span class="str">"Columns"</span>
+)
+
+<span class="comment"># Remove all widgets (clean up)</span>
+dbutils.widgets.<span class="fn">removeAll</span>()</pre>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-header orange"><span>✦</span> Secrets &amp; Config</div>
+      <div class="card-body">
+<pre><span class="comment"># List available secret scopes</span>
+dbutils.secrets.<span class="fn">listScopes</span>()
+
+<span class="comment"># List keys inside a scope</span>
+dbutils.secrets.<span class="fn">list</span>(<span class="str">"my-scope"</span>)
+
+<span class="comment"># Retrieve a secret (value is redacted in output)</span>
+password = dbutils.secrets.<span class="fn">get</span>(
+    scope=<span class="str">"my-scope"</span>, key=<span class="str">"db-password"</span>
+)
+
+<span class="comment"># Set Spark config for ADLS authentication</span>
+spark.conf.<span class="fn">set</span>(
+    <span class="str">"fs.azure.account.key.mystorage.dfs.core.windows.net"</span>,
+    dbutils.secrets.<span class="fn">get</span>(<span class="str">"my-scope"</span>, <span class="str">"storage-key"</span>)
+)
+
+<span class="comment"># Read a Spark config value</span>
+val = spark.conf.<span class="fn">get</span>(<span class="str">"spark.sql.shuffle.partitions"</span>)
+
+<span class="comment"># --- Databricks CLI (run in terminal) ---</span>
+<span class="comment"># Create a scope:</span>
+<span class="comment">#   databricks secrets create-scope --scope my-scope</span>
+<span class="comment"># Add a secret:</span>
+<span class="comment">#   databricks secrets put --scope my-scope --key db-password</span></pre>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-header red"><span>✦</span> Notebook Workflows &amp; Job Utilities</div>
+      <div class="card-body">
+<pre><span class="comment"># Exit notebook with a return value (used in pipelines)</span>
+dbutils.notebook.<span class="fn">exit</span>(<span class="str">"SUCCESS"</span>)
+
+<span class="comment"># Call a child notebook and capture its return</span>
+result = dbutils.notebook.<span class="fn">run</span>(
+    <span class="str">"./ChildNotebook"</span>,
+    timeout_seconds=<span class="num">600</span>,
+    arguments={<span class="str">"env"</span>: <span class="str">"prod"</span>, <span class="str">"date"</span>: <span class="str">"2024-01-01"</span>}
+)
+<span class="fn">print</span>(result)  <span class="comment"># whatever child passed to exit()</span>
+
+<span class="comment"># Check partition count</span>
+<span class="fn">print</span>(df.rdd.<span class="fn">getNumPartitions</span>())
+
+<span class="comment"># Repartition for parallelism</span>
+df = df.<span class="fn">repartition</span>(<span class="num">200</span>)          <span class="comment"># by count</span>
+df = df.<span class="fn">repartition</span>(<span class="str">"region"</span>)    <span class="comment"># by column</span>
+
+<span class="comment"># Coalesce to reduce small output files</span>
+df = df.<span class="fn">coalesce</span>(<span class="num">8</span>)
+
+<span class="comment"># Get SparkSession info</span>
+<span class="fn">print</span>(spark.sparkContext.appName)
+<span class="fn">print</span>(spark.version)</pre>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-header purple"><span>✦</span> Useful DataFrame Inspection</div>
+      <div class="card-body">
+<pre><span class="comment"># Show first N rows</span>
+df.<span class="fn">show</span>(<span class="num">10</span>, truncate=<span class="kw">False</span>)
+
+<span class="comment"># Print schema tree</span>
+df.<span class="fn">printSchema</span>()
+
+<span class="comment"># Column names and dtypes</span>
+<span class="fn">print</span>(df.columns)
+<span class="fn">print</span>(df.dtypes)
+
+<span class="comment"># Count rows and columns</span>
+<span class="fn">print</span>(df.<span class="fn">count</span>(), <span class="fn">len</span>(df.columns))
+
+<span class="comment"># Summary statistics (numeric columns)</span>
+df.<span class="fn">describe</span>().<span class="fn">show</span>()
+
+<span class="comment"># Null count per column</span>
+<span class="kw">from</span> pyspark.sql.functions <span class="kw">import</span> col, sum <span class="kw">as</span> s, isnan, when
+df.<span class="fn">select</span>([<span class="fn">s</span>(<span class="fn">when</span>(<span class="fn">col</span>(c).<span class="fn">isNull</span>(), <span class="num">1</span>).<span class="fn">otherwise</span>(<span class="num">0</span>))
+           .<span class="fn">alias</span>(c) <span class="kw">for</span> c <span class="kw">in</span> df.columns]).<span class="fn">show</span>()
+
+<span class="comment"># Convert to Pandas (small DataFrames only)</span>
+pdf = df.<span class="fn">toPandas</span>()
+
+<span class="comment"># Create Spark DF from Pandas</span>
+sdf = spark.<span class="fn">createDataFrame</span>(pdf)</pre>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+</body>
+</html>
